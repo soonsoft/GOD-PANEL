@@ -12,6 +12,8 @@
         ui: {}
     };
 
+    //#region Dom
+
     function loadJS(src, callback) {
         const script = document.createElement("script");
         script.onload = callback;
@@ -37,8 +39,6 @@
             on("DOMContentLoaded", doReady);
         }
     }
-
-    //#region Dom
 
     function getCookie(cookieName) {
         function parseCookieValue(s) {
@@ -319,12 +319,12 @@
 
         let response = null;
         try {
-            godInfo.requestStart = true;
+            godInfo.loading = true;
             response = await fetch(url, fetchInit);
         } catch(e) {
             throw e;
         } finally {
-            godInfo.requestStart = false;
+            godInfo.loading = false;
         }
 
         if(responseDataType === "file") {
@@ -559,7 +559,7 @@
                                         selectedValues.push(value);
                                     }
                                 });
-                                e.value = selectedValues.join(",");
+                                e.value = selectedValues;
                             }
                             break;
                         case "file":
@@ -681,7 +681,7 @@
                 return;
             }
             let elem = `
-                <div class="content-panel">
+                <div id="detailContentPanel" class="content-panel content-panel-actived">
                     <section class="title-panel">
                         <h1>${menuItem.menuText}</h1>
                     </section>
@@ -692,6 +692,14 @@
                         </section>
                         <section class="result-panel"></section>
                     </section>
+                </div>
+                <div id="loadingElement" class="page-progress large circles">
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
                 </div>
             `;
             replaceHtml(godDetailPanel, elem);
@@ -707,7 +715,6 @@
 
     function defineModules(godMenuPanel, godDetailPanel) {
         const modules = godInfo.modules = [
-            // 客户信息查询
             {
                 menuText: "常规表单系统",
                 properties: [
@@ -718,7 +725,6 @@
                         id: "select1", 
                         type: "select", 
                         label: "请选择国家与地区", 
-                        value: "", 
                         options: [
                             { value: "CN", text: "中国大陆", selected: true },
                             { value: "HK", text: "香港" },
@@ -733,7 +739,6 @@
                         id: "checkbox1", 
                         type: "checkbox", 
                         label: "选择文件类型", 
-                        value: "", 
                         options: [
                             { value: "json", text: "Json", selected: true },
                             { value: "txt", text: "文本" },
@@ -748,9 +753,7 @@
                     {
                         text: "显示表单数据",
                         click: () => {
-                            let validate = checkCurrentViewModel();
-                            if(!validate.valid) {
-                                godInfo.ui.resultRender(validate.messages);
+                            if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
                                 return;
                             }
                             let vm = getCurrentViewModel();
@@ -762,29 +765,23 @@
                     {
                         menuText: "文件上传",
                         properties: [
-                            { id: "gid", type: "string", label: "集团号", value: "" }
-                        ],
-                        button: [
-                            {
-                                text: "查询",
-                                click: () => {
-                                    let vm = getCurrentViewModel();
-                                    if(!vm.gid) {
-                                        resultRender("没有集团号");
+                            { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", required: true, value: "" },
+                            { 
+                                id: "file", 
+                                type: "file", 
+                                label: "上传", 
+                                action: (fileInput, propertyInfo) => {
+                                    let files = fileInput.files;
+                                    if(files.length === 0) {
+                                        fileInput.value = "";
+                                        resultRender("没有选中文件");
                                         return;
                                     }
-                                    let data = {
-                                        gid: vm.gid
-                                    };
-                                    httpPost("/api/web/cif/api/auth-free/outer/account/hk/individual/detail", data)
-                                        .then(json => {
-                                            let formatter;
-                                            if(json.code === "20000") {
-                                                formatter = {};
-                                            }
-                                            resultRender(json, formatter)
-                                        })
-                                        .catch(e => resultRender(e));
+                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                                        return;
+                                    }
+                                    let vm = getCurrentViewModel();
+                                    godInfo.ui.resultRender(`开始上传 ${vm.fileName}`);
                                 }
                             }
                         ]
@@ -792,236 +789,96 @@
                     {
                         menuText: "文件下载",
                         properties: [
-                            { id: "gid", type: "string", label: "集团号", value: "" }
+                            { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
                         ],
                         button: [
                             {
-                                text: "查询",
+                                text: "显示文件列表",
                                 click: () => {
-                                    let vm = getCurrentViewModel();
-                                    if(!vm.gid) {
-                                        resultRender("没有集团号");
+                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
                                         return;
                                     }
-                                    let data = {
-                                        gid: vm.gid
-                                    };
-                                    httpPost("/api/web/cif/api/auth-free/outer/account/hk/organization/detail", data)
-                                        .then(json => {
-                                            let formatter;
-                                            if(json.code === "20000") {
-                                                formatter = {};
-                                            }
-                                            resultRender(json, formatter)
-                                        })
-                                        .catch(e => resultRender(e));
+                                    let vm = getCurrentViewModel();
+                                    let data = [
+                                        `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
+                                    ];
+                                    godInfo.ui.resultRender(data);
+                                }
+                            },
+                            {
+                                actionName: "download",
+                                action: elem => {
+                                    let fileName = elem.dataset.filename;
+                                    godInfo.ui.resultRender(`${fileName} 下载完成`);
                                 }
                             }
                         ]
                     }
                 ]
             },
-            // 同步美国客户到香港
             {
-                menuText: "同步美国客户到香港",
+                menuText: "测试 Loading",
                 properties: [
                     { id: "gid", type: "string", label: "集团号", value: "" }
                 ],
                 button: [
                     {
-                        text: "同步",
+                        text: "开启",
                         click: () => {
-                            let vm = getCurrentViewModel();
-                            if(!vm.gid) {
-                                resultRender("还未输入集团号");
-                                return;
-                            }
-                            let data = [
-                                { name: "Jack", age: 30, gender: 1 },
-                                { name: "Lucy", age: 18, gender: 0 },
-                                { name: "Lily", age: 19, gender: 0 }
-                            ];
-                            resultRender(data, arr => tableRender(arr));
+                            godInfo.loading = true;
+                        }
+                    },
+                    {
+                        text: "关闭",
+                        click: () => {
+                            godInfo.loading = false;
                         }
                     }
                 ]
             },
-            // PDF 模板管理
             {
-                menuText: "PDF 模板管理",
+                menuText: "显示结果集",
                 properties: [
                     { 
-                        id: "regionCode", 
+                        id: "viewMode", 
                         type: "select", 
-                        label: "请选择地域", 
-                        value: "", 
+                        label: "请选择视图类型", 
                         options: [
-                            { value: "HK", text: "香港", selected: true },
-                            { value: "SG", text: "新加坡" }
+                            { value: "json", text: "Json", selected: true },
+                            { value: "table", text: "Table" },
+                            { value: "json-array", text: "Json Array" },
+                            { value: "text", text: "文本" }
                         ]
-                    },
-                    { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", value: "" },
-                    { 
-                        id: "file", 
-                        type: "file", 
-                        label: "上传", 
-                        action: (fileInput, propertyInfo) => {
-                            let files = fileInput.files;
-                            if(files.length === 0) {
-                                fileInput.value = "";
-                                resultRender("没有选中文件");
-                                return;
-                            }
-                            let vm = getCurrentViewModel();
-                            if(!vm.regionCode) {
-                                resultRender("没有选择地域");
-                                return;
-                            }
-                            if(!vm.fileName) {
-                                resultRender("没有填写文件名称");
-                                return;
-                            }
-                            let data = new FormData();
-                            data.append("file", files[0], files[0].name);
-                            data.append("fileName", vm.fileName);
-
-                            httpUpload(`/api/web/${regionPart(vm.regionCode)}/api/attachment/pdf/template/upload`, data)
-                                .then(json => {
-                                    fileInput.value = "";
-                                    resultRender(json);
-                                })
-                                .catch(e => {
-                                    fileInput.value = "";
-                                    resultRender(e);
-                                });
-                        }
                     }
                 ],
                 button: [
                     {
-                        text: "显示模板",
+                        text: "显示视图",
                         click: () => {
+                            if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                                return;
+                            }
                             let vm = getCurrentViewModel();
-                            if(!vm.regionCode) {
-                                resultRender("没有选择地域");
-                                return;
+                            let result, formatter;
+                            switch(vm.viewMode) {
+                                case "json":
+                                    break;
+                                case "table":
+                                    result = [
+                                        { name: "Jack", age: 30, gender: 1 },
+                                        { name: "Lucy", age: 18, gender: 0 },
+                                        { name: "Lily", age: 19, gender: 0 }
+                                    ];
+                                    formatter = arr => godInfo.ui.tableRender(arr);
+                                    break;
+                                case "json-array":
+                                    result = [];
+                                    break;
+                                default:
+                                    result = "显示文本信息";
+                                    break;
                             }
-                            httpGet(`/api/web/${regionPart(vm.regionCode)}/api/attachment/pdf/template/list`)
-                                .then(json => {
-                                    let formatter;
-                                    let data = json;
-                                    if(json.code === "20000") {
-                                        formatter = {
-                                            data: elem => {
-                                                return [
-                                                    elem.fileName,
-                                                    elem.lastModifiedDate,
-                                                    `<a href="javascript:void(0)" data-action="download" data-filename="${elem.fileName}">下载</a>`
-                                                ];
-                                            }
-                                        };
-                                    }
-                                    resultRender(data, formatter);
-                                })
-                                .catch(e => resultRender(e));
-                        }
-                    },
-                    {
-                        actionName: "download",
-                        action: elem => {
-                            let vm = getCurrentViewModel();
-                            if(!vm.regionCode) {
-                                resultRender("没有选择地域");
-                                return;
-                            }
-                            let fileName = elem.dataset.filename;
-                            let data = new URLSearchParams();
-                            data.append("fileName", fileName);
-                            httpDownload(`/api/web/${regionPart(vm.regionCode)}/api/attachment/pdf/template/download`, data, fileName)
-                                .catch(e => resultRender(e));
-                        }
-                    }
-                ]
-            },
-            // 银行卡状态维护
-            {
-                menuText: "银行卡状态维护",
-                properties: [
-                    { id: "gid", type: "string", label: "集团号", value: "" },
-                    { id: "swiftCode", type: "string", label: "Swift Code（更新时）", value: "" },
-                    { id: "bankAccountNo", type: "string", label: "银行卡号（更新时）", value: "" },
-                    { id: "transferCheckFlag", type: "select", label: "入金核证状态（更新时）", value: "", options: [ "Checked", "Unchecked" ]},
-                    { id: "withdrawalCheckFlag", type: "select", label: "出金核证状态（更新时）", value: "", options: [ "Checked", "Unchecked" ]}
-                ],
-                button: [
-                    {
-                        text: "查询银行卡",
-                        click: () => {
-                            let vm = getCurrentViewModel();
-                            if(!vm.gid) {
-                                resultRender("没有集团号");
-                                return;
-                            }
-                            let data = {
-                                groupNo: vm.gid
-                            };
-                            httpPost("/api/web/cif/api/auth-free/acct/customer/bank-card/query", data)
-                                .then(json => {
-                                    let result = json;
-                                    if(json.code === "20000") {
-                                        result = {};
-                                        if(Array.isArray(json.data) ** json.data.length > 0) {
-                                            json.data.forEach((e, i) => {
-                                                result[`银行卡 ${i + 1}`] = {
-                                                    "银行名称": e.bankNameCn,
-                                                    "SwiftCode": e.bankcardSwiftNo,
-                                                    "户名": e.bankAccountName,
-                                                    "卡号": e.bankAccountNo,
-                                                    "香港清算码": e.hkClearingCode,
-                                                    "EDDA 状态": e.bankAccountState ? e.bankAccountState.eDDAFlag : "unknown",
-                                                    "入金核证状态": e.bankAccountState ? e.bankAccountState.transferCheckFlag : "unknown",
-                                                    "出金核证状态": e.bankAccountState ? e.bankAccountState.withdrawalCheckFlag : "unknown"
-                                                };
-                                            });
-                                        } else {
-                                            result = "没有银行卡数据";
-                                        }
-                                    }
-                                    resultRender(result);
-                                })
-                                .catch(e => resultRender(e));
-                        }
-                    },
-                    {
-                        text: "银行卡变更状态",
-                        click: () => {
-                            let vm = getCurrentViewModel();
-                            if(!vm.gid) {
-                                resultRender("没有集团号");
-                                return;
-                            }
-                            if(!vm.swiftCode) {
-                                resultRender("没有 Swift Code");
-                                return;
-                            }
-                            if(!vm.bankAccountNo) {
-                                resultRender("没有银行卡号");
-                                return;
-                            }
-                            if(!vm.transferCheckFlag || !vm.withdrawalCheckFlag) {
-                                resultRender("[入金核证] 与 [出金核证] 都要选");
-                                return;
-                            }
-                            let data = {
-                                groupNo: vm.gid,
-                                bankcardSwiftNo: vm.swiftCode,
-                                bankAccountNo: vm.bankAccountNo,
-                                transferCheckFlag: vm.transferCheckFlag,
-                                withdrawalCheckFlag: vm.withdrawalCheckFlag
-                            };
-                            httpPost("/api/web/cif/api/auth-free/acct/customer/bank-card/state/modify", data)
-                                .then(json => resultRender(json))
-                                .catch(e => resultRender(e));
+                            godInfo.ui.resultRender(result, formatter);
                         }
                     }
                 ]
@@ -1073,6 +930,14 @@
             if(result.messages.length > 0) {
                 result.valid = false;
             }
+            result.invalid = fn => {
+                if(!result.valid) {
+                    if(isFunction(fn)) {
+                        fn(result);
+                    }
+                }
+                return !result.valid;
+            };
             return result;
         }
 
@@ -1159,7 +1024,7 @@
         // 注册事件
         (function() {
             on(godDetailPanel, "click", e => {
-                if(godInfo.requestStart) {
+                if(godInfo.loading) {
                     return;
                 }
                 let elem = e.target;
@@ -1193,9 +1058,6 @@
             }, false);
     
             on(godDetailPanel, "change", e => {
-                if(godInfo.requestStart) {
-                    return;
-                }
                 let elem = e.target;
                 let value = elem.value;
                 let propertyName = elem.dataset.propertyName;
@@ -1211,13 +1073,13 @@
                                     }
                                     break;
                                 case "checkbox":
-                                    let selectedValues = propertyInfo.value ? propertyInfo.value.split(",") : [];
+                                    let selectedValues = Array.isArray(propertyInfo.value) ? propertyInfo.value : [];
                                     if(elem.checked) {
                                         selectedValues.push(value);
                                     } else {
                                         selectedValues = selectedValues.filter(v => v !== value);
                                     }
-                                    propertyInfo.value = selectedValues.join(",");
+                                    propertyInfo.value = selectedValues;
                                     break;
                                 default:
                                     propertyInfo.value = 
@@ -1286,6 +1148,104 @@
                 transform: translate3d(0, 0, 0);
                 opacity: 1;
                 transition: opacity .32s cubic-bezier(.4, 0, .6, 1) .32s, transform .32s cubic-bezier(.4, 0, .6, 1) .32s;
+            }
+
+            #loadingElement {
+                display: none;
+            }
+
+            div.loading-show {
+                display: block !important;
+            }
+
+            /* 环形加载动画 */
+            .page-progress {
+                box-sizing: border-box;
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                font-size: 16px;
+            }
+
+            .page-progress.large {
+                width: 96px;
+                height: 96px;
+                margin-top: -48px;
+                margin-left: -48px;
+            }
+
+            .page-progress.circles {
+                background-color: transparent;
+                border: none;
+            }
+
+            .page-progress.circles .circle {
+                box-sizing: border-box;
+                display: inline-block;
+                height: 100%;
+                left: 0px;
+                padding: 18px;
+                opacity: 0;
+                position: absolute;
+                top: 0px;
+                width: 100%;
+                animation: circles 4.125s ease-in-out infinite;
+            }
+
+            .page-progress.circles .circle::after {
+                background-color: ${godInfo.theme.primaryColor};
+                border-radius: 50%;
+                content: "";
+                display: block;
+                position: absolute;
+                height: 6px;
+                width: 6px;
+            }
+
+            .page-progress.circles :nth-child(1).circle {
+                animation-delay: 0s;
+            }
+
+            .page-progress.circles :nth-child(2).circle {
+                animation-delay: 0.126s;
+            }
+
+            .page-progress.circles :nth-child(3).circle {
+                animation-delay: 0.252s;
+            }
+
+            .page-progress.circles :nth-child(4).circle {
+                animation-delay: 0.387s;
+            }
+
+            .page-progress.circles :nth-child(5).circle {
+                animation-delay: 0.504s;
+            }
+
+            .page-progress.circles :nth-child(6).circle {
+                animation-delay: 0.63s;
+            }
+            
+            @keyframes circles {
+                0%{transform: rotate(-180deg);
+                    opacity: 0
+                }
+                13% {
+                    opacity: 0
+                }
+                26% {
+                    opacity: 1
+                }
+                74% {
+                    opacity: 1
+                }
+                87% {
+                    opacity: 0
+                }
+                100% {
+                transform: rotate(585deg);
+                    opacity: 0
+                }
             }
 
             #godPanel {
@@ -1447,7 +1407,7 @@
                 border-radius: 8px;
                 display: flex;
                 flex-direction: column;
-                align-content: center;
+                position: relative;
             }
 
             #godPanel #godDetailPanel .content-panel {
@@ -1456,6 +1416,15 @@
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
+            }
+
+            #godPanel #godDetailPanel .content-panel-actived {
+                opacity: 1;
+                transition: opacity .24s cubic-bezier(.4, 0, .6, 1) 0ms;
+            }
+
+            #godPanel #godDetailPanel .content-panel-disabled {
+                opacity: .2;
             }
 
             #godPanel #godDetailPanel section.title-panel {
@@ -1497,6 +1466,7 @@
                 border-radius: 8px;
                 padding-left: 2px;
                 padding-right: 2px;
+                outline: none;
             }
 
             #godPanel #godDetailPanel textarea {
@@ -1508,9 +1478,11 @@
                 padding-left: 2px;
                 padding-right: 2px;
                 overflow: auto;
+                outline: none;
             }
 
             #godPanel #godDetailPanel input:focus,
+            #godPanel #godDetailPanel select:focus,
             #godPanel #godDetailPanel textarea:focus {
                 border-color: ${godInfo.theme.primaryColor};
             }
@@ -1530,6 +1502,7 @@
                 margin: 0;
                 padding: 0;
                 vertical-align: middle;
+                background-color: #fff;
                 outline: none;
                 -webkit-appearance: none;
                 -moz-appearance: none;
@@ -1545,6 +1518,7 @@
             #godPanel #godDetailPanel .checkbox-text {
                 margin-left: 5px;
                 line-height: 32px;
+                font-size: 14px;
             }
 
             #godPanel #godDetailPanel label.label-file {
@@ -1770,9 +1744,41 @@
 
         appendHtml(template);
 
-        const godMenuPanel = document.getElementById("godMenuPanel");
-        const godDetailPanel = document.getElementById("godDetailPanel");
-        defineModules(godMenuPanel, godDetailPanel);
+        godInfo.godBackground = document.getElementById("godBackground");
+        godInfo.godContentPanel = document.getElementById("godContentPanel");
+
+        let loadingValue = false;
+        let loadingTimeout = null;
+        Object.defineProperty(godInfo, "loading", {
+            configurable: true,
+            enumerable: true,
+            get: () => {
+                return loadingValue;
+            },
+            set: val => {
+                loadingValue = val === true;
+                if(loadingValue) {
+                    loadingTimeout = setTimeout(() => {
+                        loadingTimeout = null;
+                        document.getElementById("loadingElement")?.classList.add("loading-show");
+                        document.getElementById("detailContentPanel")?.classList.add("content-panel-disabled");
+                    }, 1000);
+                } else {
+                    if(loadingTimeout) {
+                        clearTimeout(loadingTimeout);
+                        loadingTimeout = null;
+                    }
+                    document.getElementById("loadingElement")?.classList.remove("loading-show");
+                    document.getElementById("detailContentPanel")?.classList.remove("content-panel-disabled");
+                }
+            }
+        });
+
+        godInfo.godMenuPanel = document.getElementById("godMenuPanel");
+        godInfo.godDetailPanel = document.getElementById("godDetailPanel");
+        defineModules(godInfo.godMenuPanel, godInfo.godDetailPanel);
+
+
 
         const godPanel = document.getElementById("godPanel");
         const godHandle = document.getElementById("godHandle");
