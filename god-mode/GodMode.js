@@ -9,7 +9,48 @@
         theme: {
             primaryColor: "#0158b1"
         },
-        ui: {}
+        ui: {
+            onClosed: module => {
+                if(isFunction(module)) {
+                    godInfo.addEventListener("closed", module);
+                } else {
+                    godInfo.dispatchEvent("closed", module);
+                }
+            },
+            onOpend: module => {
+                if(isFunction(module)) {
+                    godInfo.addEventListener("opend", module);
+                } else {
+                    godInfo.dispatchEvent("opend", module);
+                }
+            }
+        },
+        events: {},
+        addEventListener: (name, fn) => {
+            if(!isFunction(fn)) {
+                return;
+            }
+            let callbackArr = godInfo.events[name];
+            if(!callbackArr) {
+                callbackArr = [];
+                godInfo.events[name] = callbackArr;
+            }
+            for(let i = 0; i < callbackArr.length; i++) {
+                if(callbackArr[i] === fn) {
+                    return;
+                }
+            }
+            callbackArr.push(fn);
+        },
+        dispatchEvent: (name, obj) => {
+            if(isEmpty(name)) {
+                return;
+            }
+            const callbackArr = godInfo.events[name];
+            if(Array.isArray(callbackArr)) {
+                callbackArr.forEach(fn => fn.call(godInfo, obj));
+            }
+        }
     };
 
     //#region Dom
@@ -675,20 +716,21 @@
         }
 
         // 切换页面
-        function openPage(id) {
-            let menuItem = godInfo.getCurrentModule(id);
-            if(!menuItem) {
+        function openPage(moduleId) {
+            let moduleInfo = godInfo.getCurrentModule(moduleId);
+            if(!moduleInfo) {
                 return;
             }
+
             let elem = `
                 <div id="detailContentPanel" class="content-panel content-panel-actived">
                     <section class="title-panel">
-                        <h1>${menuItem.menuText}</h1>
+                        <h1>${moduleInfo.menuText}</h1>
                     </section>
-                    ${buttonRender(menuItem.button)}
+                    ${buttonRender(moduleInfo.button)}
                     <section class="body-panel">
                         <section class="form-panel">
-                            ${formRender(menuItem.properties)}
+                            ${formRender(moduleInfo.properties)}
                         </section>
                         <section class="result-panel"></section>
                     </section>
@@ -703,13 +745,29 @@
                 </div>
             `;
             replaceHtml(godDetailPanel, elem);
+
+            godInfo.ui.onOpend(moduleInfo);
+        }
+
+        function closePage(moduleId) {
+            if(!moduleId) {
+                return;
+            }
+            let moduleInfo = godInfo.getCurrentModule(moduleId);
+            if(!moduleInfo) {
+                return;
+            }
+
+            godInfo.ui.onClosed(moduleInfo);
         }
 
         godInfo.ui.resultRender = resultRender;
         godInfo.ui.formRender = formRender;
         godInfo.ui.buttonRender = buttonRender;
         godInfo.ui.tableRender = tableRender;
+
         godInfo.ui.openPage = openPage;
+        godInfo.ui.closePage = closePage;
 
     }
 
@@ -862,6 +920,52 @@
                             let result, formatter;
                             switch(vm.viewMode) {
                                 case "json":
+                                    result = {
+                                        customerName: "张信哲",
+                                        customerType: "个人客户",
+                                        userInfo: {
+                                            username: "Jeff",
+                                            cellPhone: "13976117766"
+                                        },
+                                        accountInfo: {
+                                            hkAccount: {
+                                                accountNo: "HK0011",
+                                                regionCode: "HK",
+                                                tradeAccount: [
+                                                    {
+                                                        tradeAccountType: "代理人账户",
+                                                        accountNo: "123456"
+                                                    },
+                                                    {
+                                                        tradeAccountType: "全委账户",
+                                                        accountNo: "987651"
+                                                    },
+                                                    {
+                                                        tradeAccountType: "小贷账户",
+                                                        accountNo: "135792"
+                                                    }
+                                                ]
+                                            },
+                                            sgAccount: {
+                                                accountNo: "SG2211",
+                                                regionCode: "SG",
+                                                tradeAccount: [
+                                                    {
+                                                        tradeAccountType: "直投账户",
+                                                        accountNo: "665588"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    };
+                                    formatter = {
+                                        tradeAccount: elem => {
+                                            return [
+                                                elem.tradeAccountType,
+                                                elem.accountNo
+                                            ];
+                                        }
+                                    };
                                     break;
                                 case "table":
                                     result = [
@@ -872,7 +976,34 @@
                                     formatter = arr => godInfo.ui.tableRender(arr);
                                     break;
                                 case "json-array":
-                                    result = [];
+                                    result = {
+                                        customerName: "张信哲",
+                                        customerNameEn: "Jeff",
+                                        bankcardList: [
+                                            {
+                                                bankName: "渣打银行",
+                                                bankAccountName: "张信哲",
+                                                bankAccountNo: "6623 8907 9876 1678 123"
+                                            },
+                                            {
+                                                bankName: "招商银行香港分行",
+                                                bankAccountName: "张信哲",
+                                                bankAccountNo: "7789 8907 9965 1678 123"
+                                            }
+                                        ],
+                                        certificates: [
+                                            "中国居民身份证", "港澳往来通行证", "美国护照", "台湾身份证"
+                                        ]
+                                    };
+                                    formatter = {
+                                        bankcardList: elem => {
+                                            return [
+                                                elem.bankName,
+                                                elem.bankAccountName,
+                                                elem.bankAccountNo
+                                            ];
+                                        }
+                                    };
                                     break;
                                 default:
                                     result = "显示文本信息";
@@ -941,20 +1072,25 @@
             return result;
         }
 
-        function resetViewModel(id) {
-            if(!id) {
-                return;
-            }
-            let module = getCurrentModule(id);
-            if(Array.isArray(module.properties)) {
-                module.properties.forEach((e, i) => {
-                    e.value = "";
-                });
-            }
-        }
-
         // 生成菜单
         ;(function() {
+            godInfo.ui.onClosed(module => {
+                if(isFunction(module.onClosed)) {
+                    module.onClosed.call(godInfo, module);
+                }
+
+                if(Array.isArray(module.properties)) {
+                    module.properties.forEach((e, i) => {
+                        e.value = "";
+                    });
+                }
+            });
+            godInfo.ui.onOpend(module => {
+                if(isFunction(module.onOpend)) {
+                    module.onOpend.call(godInfo, module);
+                }
+            });
+
             function menuItemRender(menuItem, id, level) {
                 let marginLeft = 8 + 40 * level;
                 menuItem.id = id;
@@ -1011,7 +1147,7 @@
                             break;
                         }
                     }
-                    resetViewModel(godInfo.currentMenuId);
+                    godInfo.ui.closePage(godInfo.currentMenuId);
 
                     elem.classList.add("menu-item-selected");
                     godInfo.currentMenuId = id;
@@ -1777,8 +1913,6 @@
         godInfo.godMenuPanel = document.getElementById("godMenuPanel");
         godInfo.godDetailPanel = document.getElementById("godDetailPanel");
         defineModules(godInfo.godMenuPanel, godInfo.godDetailPanel);
-
-
 
         const godPanel = document.getElementById("godPanel");
         const godHandle = document.getElementById("godHandle");
