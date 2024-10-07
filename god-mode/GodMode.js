@@ -1557,6 +1557,10 @@
                 position: relative;
             }
 
+            #godPanel #godDetailPanel .primary-color {
+                color: ${godInfo.theme.primaryColor};
+            }
+
             #godPanel #godDetailPanel .content-panel {
                 flex: 1 1 auto;
                 margin: 10px;
@@ -1810,10 +1814,6 @@
                 flex: none;
             }
 
-            #godPanel #godDetailPanel div.result-item .primary-color {
-                color: ${godInfo.theme.primaryColor};
-            }
-
             #godPanel #godDetailPanel div.result-item a {
                 color: ${godInfo.theme.primaryColor};
                 text-decoration: none;
@@ -1874,13 +1874,13 @@
                 <div id="godContentPanel">
                     <div id="godPanelHeader">
                         <button id="closeButton"></button>
-                        <span class="god-text">I AM THE GOD OF iCRM</span>
+                        <span class="god-text">I AM THE GOD PANEL</span>
                     </div>
                     <div id="godPanelContainer">
                         <div id="godMenuPanel"></div>
                         <div id="godDetailPanel">
                             <div class="content-panel" style="justify-content:center">
-                                <h1 style="text-align:center;">欢迎使用 iCRM 上帝模式</h1>
+                                <h1 class="primary-color" style="text-align:center;">Welcome to the God Panel</h1>
                             </div>
                         </div>
                     </div>
