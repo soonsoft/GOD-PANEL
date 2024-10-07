@@ -563,7 +563,7 @@
                     htmlBuilder.push(`<label class="label-text">${e.label}</label>${insertStar(e.required)}<br>`);
                     switch(e.type) {
                         case "string":
-                            htmlBuilder.push(`<input type="text" data-property-name="${e.id}" value="${value}">`);
+                            htmlBuilder.push(`<input type="text" data-property-name="${e.id}" value="${value}" />`);
                             break;
                         case "text":
                             htmlBuilder.push(`<textarea data-property-name="${e.id}"></textarea>`);
@@ -612,6 +612,13 @@
                             `);
                             break;
                         default:
+                            htmlBuilder.push(`<input type="${e.type}" data-property-name="${e.id}" value="${value}"`);
+                            ["min", "max", "step"].forEach(attr => {
+                                if(!isEmpty(e[attr])) {
+                                    htmlBuilder.push(` ${attr}="${e[attr]}"`);
+                                }
+                            });
+                            htmlBuilder.push(" />")
                             break;
                     }
                     htmlBuilder.push("</li>");
@@ -779,6 +786,9 @@
                     { id: "text1", type: "string", label: "文本框", value: "" },
                     { id: "text2", type: "string", label: "必输项", value: "", required: true },
                     { id: "textarea1", type: "text", label: "多行文本框", value: "" },
+                    { id: "number1", type: "number", label: "数字", step: 5 },
+                    { id: "date1", type: "date", label: "日期" },
+                    { id: "range1", type: "range", label: "滑动条", min: 0, max: 100, value: 25 },
                     { 
                         id: "select1", 
                         type: "select", 
@@ -1731,7 +1741,7 @@
                 height: 100%;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-start;
                 align-items: center;
                 border-right: solid 1px ${godInfo.theme.primaryColor};
                 overflow: auto;
