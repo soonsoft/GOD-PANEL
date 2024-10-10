@@ -18,7 +18,8 @@
             buttonBgColor: "rgba(255, 255, 255, 1)",
             buttonActiveBgColor: "#000000",
             starColor: "#cf0842",
-            basicBgColor: "#ffffff"
+            basicBgColor: "#ffffff",
+            basicFtColor: "#000000"
         },
         http: {
             host: "",
@@ -1326,7 +1327,7 @@
             }
 
             #godHandle:active {
-                background-color: #0100b1;
+                background-color: ${godInfo.theme.basicFtColor};
             }
 
             .god-handle-default {
@@ -1858,7 +1859,7 @@
             #godPanel #godDetailPanel div.result-item {
                 width: auto;
                 height: 40px;
-                background-color: #eee;
+                background-color: ${godInfo.theme.basicBgColor};
                 border-radius: 6px;
                 padding: 0 10px 0 10px;
                 margin-top: 10px;
