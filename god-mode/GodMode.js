@@ -7,7 +7,22 @@
     };
     const godInfo = {
         theme: {
-            primaryColor: "#0158b1"
+            primaryColor: "rgb(44, 108, 128)",
+            fontColor: "#000000",
+            panelColor: "rgba(255, 255, 255, .4)",
+            panelFontColor: "#000000",
+            panelBorderColor: "#000000",
+            menuItemIconBgColor: "rgba(255, 255, 255, .5)",
+            menuItemHoverColor: "rgba(255, 255, 255, .2)",
+            menuItemSelectedColor: "rgba(255, 255, 255, .4)",
+            buttonBgColor: "rgba(255, 255, 255, 1)",
+            buttonActiveBgColor: "#000000",
+            starColor: "#cf0842",
+            basicBgColor: "#ffffff"
+        },
+        http: {
+            host: "",
+            carryCookie: true
         },
         ui: {
             onClosed: module => {
@@ -201,9 +216,41 @@
         return "";
     }
 
+    function saveAs(blob, filename) {
+        let alink = document.createElement("a");
+        alink.style = "margin-left: -100px";
+        document.body.appendChild(alink);
+        alink.download = filename || "download-file.unknown";
+        alink.href = URL.createObjectURL(blob);
+        alink.click();
+        document.body.removeChild(alink);
+    }
+
     //#endregion
 
     //#region Http Request
+
+    function getContentDisposition(header) {
+        let content = header.get("Content-Disposition");
+        content = content ? content : "";
+        let parts = content ? content.split(";") : [];
+        let result = {
+            value: ""
+        };
+        for(let i = 0; i < parts.length; i++) {
+            let part = parts[i];
+            if(part) {
+                part = part.trim();
+            }
+            if(part.indexOf("=") > -1) {
+                let arr = part.split("=");
+                result[arr[0].trim()] = ecodeURIComponent(arr[1].trim());
+            } else {
+                result.value = part;
+            }
+        }
+        return result;
+    }
 
     async function httpUpload(url, data) {
         return await httpPost(url, data, {
@@ -222,19 +269,8 @@
             resp = await httpPost(url, data, options);
         }
         if(resp.ok) {
-            let content = resp.headers["Content-Disposition"];
-            content = content ? content : "";
-            let parts = content ? content.split(";") : [];
-            for(let i = 0; i < parts.length; i++) {
-                let part = parts[i];
-                if(part) {
-                    part.trim();
-                }
-                let arr = part.split("=");
-                if(arr[0].trim() === "filename") {
-                    filename = arr[1];
-                    break;
-                }
+            if(isEmpty(filename)) {
+                filename = getContentDisposition(resp.headers)?.filename;
             }
             let b = await resp.blob();
             if(b.type === "application/json") {
@@ -247,13 +283,7 @@
                 }
             }
 
-            let alink = document.createElement("a");
-            alink.style = "margin-left: -100px";
-            document.body.appendChild(alink);
-            alink.download = filename || "download-file.unknown";
-            alink.href = URL.createObjectURL(b);
-            alink.click();
-            document.body.removeChild(alink);
+            saveAs(blob, filename);
         } else {
             throw {
                 code: "Http 请求出错了",
@@ -311,11 +341,12 @@
         }
 
         function initHeader() {
-            let sessionId = localStorage.getItem("sessionId");
             const defaultHeaders = {};
-            defaultHeaders["Icrm-Session-Id"] = sessionId;
             if(hasRequestBody && requestDataType === "json") {
                 defaultHeaders["Content-Type"] = contentType[requestDataType];
+            }
+            if(isFunction(godInfo.http.setDefaultHeaders)) {
+                godInfo.http.setDefaultHeaders(defaultHeaders);
             }
             return defaultHeaders;
         }
@@ -336,10 +367,12 @@
         }
 
         let fetchInit = Object.assign({
-            credentials: "include",
             method: method,
             headers: initHeader()
         }, options);
+        if(godInfo.http.carryCookie) {
+            fetchInit.credentials = "include";
+        }
         fetchInit.body = initBody();
 
         let urlParams = data;
@@ -395,6 +428,7 @@
     //#region UI
 
     function initUI() {
+        // Json 结果集展示
         function resultRender(data, formatter) {
             let resultPanel = godDetailPanel.querySelector(".result-panel");
             if(!resultPanel) {
@@ -549,99 +583,6 @@
             replaceHtml(resultPanel, htmlBuilder.join(""));
         }
 
-        function formRender(properties) {
-            function insertStar(hasStar) {
-                return hasStar ? `<span class="required-star">*</span>` : "";
-            }
-
-            let htmlBuilder = [];
-            htmlBuilder.push('<ul class="form-list">');
-            if(Array.isArray(properties)) {
-                properties.forEach((e, i) => {
-                    let value = e.value || "";
-                    htmlBuilder.push("<li>");
-                    htmlBuilder.push(`<label class="label-text">${e.label}</label>${insertStar(e.required)}<br>`);
-                    switch(e.type) {
-                        case "string":
-                            htmlBuilder.push(`<input type="text" data-property-name="${e.id}" value="${value}" />`);
-                            break;
-                        case "text":
-                            htmlBuilder.push(`<textarea data-property-name="${e.id}"></textarea>`);
-                            break;
-                        case "select":
-                            htmlBuilder.push(`<select data-property-name="${e.id}">`);
-                            htmlBuilder.push(`<option value="">请选择</option>`);
-                            if(Array.isArray(e.options)) {
-                                e.options.forEach(option => {
-                                    if(typeof option !== "object") {
-                                        option = { value: option }
-                                    }
-                                    let value = option.value;
-                                    let text = option.text || value;
-                                    let selected = !!option.selected;
-                                    htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
-                                    if(selected) {
-                                        e.value = value;
-                                    }
-                                });
-                            }
-                            htmlBuilder.push(`</select>`);
-                            break;
-                        case "checkbox":
-                            if(Array.isArray(e.options)) {
-                                const selectedValues = [];
-                                e.options.forEach((option, idx) => {
-                                    let value = option.value;
-                                    let text = option.text || value;
-                                    let selected = !!option.selected;
-                                    htmlBuilder.push(`<input id="${e.id}_${idx}" data-property-name="${e.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
-                                    htmlBuilder.push(`<label for="${e.id}_${idx}" class="checkbox-text">${text}</label><br>`);
-                                    if(selected) {
-                                        selectedValues.push(value);
-                                    }
-                                });
-                                e.value = selectedValues;
-                            }
-                            break;
-                        case "file":
-                            htmlBuilder.splice(htmlBuilder.length - 1, 1, `
-                                <label class="label-file">
-                                    <input type="file" data-property-name="${e.id}" value="">
-                                    <span>${e.label}</span>
-                                </label>
-                            `);
-                            break;
-                        default:
-                            htmlBuilder.push(`<input type="${e.type}" data-property-name="${e.id}" value="${value}"`);
-                            ["min", "max", "step"].forEach(attr => {
-                                if(!isEmpty(e[attr])) {
-                                    htmlBuilder.push(` ${attr}="${e[attr]}"`);
-                                }
-                            });
-                            htmlBuilder.push(" />")
-                            break;
-                    }
-                    htmlBuilder.push("</li>");
-                });
-            }
-            htmlBuilder.push("</ul>");
-            return htmlBuilder.join("");
-        }
-
-        function buttonRender(buttonList) {
-            let htmlBuilder = [];
-            if(Array.isArray(buttonList) && buttonList.length > 0) {
-                htmlBuilder.push('<section class="button-panel">');
-                buttonList.forEach((b, i) => {
-                    if(!isFunction(b.action)) {
-                        htmlBuilder.push(`<button data-button-index="${i}">${b.text}</button>`);
-                    }
-                });
-                htmlBuilder.push('</section>');
-            }
-            return htmlBuilder.join("");
-        }
-
         function tableRender(columns, data) {
             if(arguments.length === 1) {
                 data = columns;
@@ -722,7 +663,11 @@
             `;
         }
 
-        // 切换页面
+        function imageRender(blob) {
+
+        }
+
+        // 打开页面
         function openPage(moduleId) {
             let moduleInfo = godInfo.getCurrentModule(moduleId);
             if(!moduleInfo) {
@@ -734,13 +679,13 @@
                     <section class="title-panel">
                         <h1>${moduleInfo.menuText}</h1>
                     </section>
-                    ${buttonRender(moduleInfo.button)}
                     <section class="body-panel">
                         <section class="form-panel">
                             ${formRender(moduleInfo.properties)}
                         </section>
                         <section class="result-panel"></section>
                     </section>
+                    ${buttonRender(moduleInfo.button)}
                 </div>
                 <div id="loadingElement" class="page-progress large circles">
                     <span class="circle"></span>
@@ -755,7 +700,7 @@
 
             godInfo.ui.onOpend(moduleInfo);
         }
-
+        // 关闭页面
         function closePage(moduleId) {
             if(!moduleId) {
                 return;
@@ -766,6 +711,101 @@
             }
 
             godInfo.ui.onClosed(moduleInfo);
+        }
+
+        // 生成表单
+        function formRender(properties) {
+            function insertStar(hasStar) {
+                return hasStar ? `<span class="required-star">*</span>` : "";
+            }
+
+            let htmlBuilder = [];
+            htmlBuilder.push('<ul class="form-list">');
+            if(Array.isArray(properties)) {
+                properties.forEach((e, i) => {
+                    let value = e.value || "";
+                    htmlBuilder.push("<li>");
+                    htmlBuilder.push(`<label class="label-text">${e.label}</label>${insertStar(e.required)}<br>`);
+                    switch(e.type) {
+                        case "string":
+                            htmlBuilder.push(`<input type="text" data-property-name="${e.id}" value="${value}" />`);
+                            break;
+                        case "text":
+                            htmlBuilder.push(`<textarea data-property-name="${e.id}"></textarea>`);
+                            break;
+                        case "select":
+                            htmlBuilder.push(`<select data-property-name="${e.id}">`);
+                            htmlBuilder.push(`<option value="">请选择</option>`);
+                            if(Array.isArray(e.options)) {
+                                e.options.forEach(option => {
+                                    if(typeof option !== "object") {
+                                        option = { value: option }
+                                    }
+                                    let value = option.value;
+                                    let text = option.text || value;
+                                    let selected = !!option.selected;
+                                    htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
+                                    if(selected) {
+                                        e.value = value;
+                                    }
+                                });
+                            }
+                            htmlBuilder.push(`</select>`);
+                            break;
+                        case "checkbox":
+                            if(Array.isArray(e.options)) {
+                                const selectedValues = [];
+                                e.options.forEach((option, idx) => {
+                                    let value = option.value;
+                                    let text = option.text || value;
+                                    let selected = !!option.selected;
+                                    htmlBuilder.push(`<input id="${e.id}_${idx}" data-property-name="${e.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
+                                    htmlBuilder.push(`<label for="${e.id}_${idx}" class="checkbox-text">${text}</label><br>`);
+                                    if(selected) {
+                                        selectedValues.push(value);
+                                    }
+                                });
+                                e.value = selectedValues;
+                            }
+                            break;
+                        case "file":
+                            htmlBuilder.splice(htmlBuilder.length - 1, 1, `
+                                <label class="label-file">
+                                    <input type="file" data-property-name="${e.id}" value="">
+                                    <span>${e.label}</span>
+                                </label>
+                            `);
+                            break;
+                        default:
+                            htmlBuilder.push(`<input type="${e.type}" data-property-name="${e.id}" value="${value}"`);
+                            ["min", "max", "step"].forEach(attr => {
+                                if(!isEmpty(e[attr])) {
+                                    htmlBuilder.push(` ${attr}="${e[attr]}"`);
+                                }
+                            });
+                            htmlBuilder.push(" />")
+                            break;
+                    }
+                    htmlBuilder.push("</li>");
+                });
+            }
+            htmlBuilder.push("</ul>");
+            return htmlBuilder.join("");
+        }
+
+        // 生成按钮
+        function buttonRender(buttonList) {
+            let htmlBuilder = [];
+            if(Array.isArray(buttonList) && buttonList.length > 0) {
+                htmlBuilder.push('<section class="button-panel">');
+                buttonList.forEach((b, i) => {
+                    if(!isFunction(b.action)) {
+                        htmlBuilder.push(`<button ${i === 0 ? "style=\"margin-left:0\"" : ""} data-button-index="${i}">${b.text}</button>`);
+                    }
+                });
+                htmlBuilder.push('</section>');
+            }
+            return htmlBuilder.join("");
         }
 
         godInfo.ui.resultRender = resultRender;
@@ -1059,7 +1099,12 @@
                 messages: []
             };
             if(Array.isArray(module.properties)) {
-                module.properties.forEach((e, i) => {
+                let properties = module.properties;
+                if(arguments.length > 0) {
+                    let idArr = Array.prototype.slice.call(arguments, 0, arguments.length);
+                    properties = properties.filter(p => idArr.include(p.id));
+                }
+                properties.forEach((e, i) => {
                     if(e.required && isEmpty(e.value)) {
                         result.messages.push(`${e.label || e.id}不能为空`);
                     }
@@ -1433,7 +1478,7 @@
                 top: 2%;
                 left: 2%;
                 position: absolute;
-                background-color: rgba(255, 255, 255, .5);
+                background-color: ${godInfo.theme.panelColor};
                 -webkit-backdrop-filter: blur(20px);
                 backdrop-filter: blur(20px);
                 border-radius: 10px;
@@ -1509,7 +1554,7 @@
                 left: 4px;
                 right: 4px;
                 bottom: 4px;
-                background-color: rgba(255, 255, 255, .2);
+                background-color: ${godInfo.theme.menuItemHoverColor};
                 opacity: 0;
                 transition: opacity 240ms cubic-bezier(.4, 0, .6, 1) 0ms;
                 cursor: pointer;
@@ -1526,7 +1571,7 @@
             }
 
             #godPanel #godMenuPanel dt.menu-item-selected > b {
-                background-color: rgba(255, 255, 255, .4) !important;
+                background-color: ${godInfo.theme.menuItemSelectedColor} !important;
                 opacity: 1;
             }
     
@@ -1538,7 +1583,7 @@
                 margin-top: 8px;
                 margin-left: 8px;
                 margin-right: 8px;
-                background-color: rgba(255, 255, 255, .5);
+                background-color: ${godInfo.theme.menuItemIconBgColor};
                 background-image: url("data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSIzNDQwIj48cGF0aCBkPSJNOTM3LjA2MiA2MjEuNjg4IDEwMjQgNjIxLjY4OCAxMDI0IDQwMi4yNWwtODYuOTM4IDBjLTg4LjE4OCAwLTEwOS4xODgtNTAuOTM4LTQ3LTExMy4xODhsNjEuNTYyLTYxLjU2Mi0xNTUuMTg4LTE1NS4xMjYtNjEuNSA2MS41Yy02Mi4zMTIgNjIuMzEyLTExMy4zMTIgNDEuMTg4LTExMy4xMjYtNDYuODc2IDAtMC4yNS0wLjEyNi0wLjM3Ni0wLjEyNi0wLjU2Mkw2MjEuNjg0IDAgNDAyLjM0NCAwbDAgODcuMjVjLTAuMjUgODcuODc2LTUxLjA2MiAxMDguODc2LTExMy4yODIgNDYuNjI2bC02MS41MzItNjEuNUw3Mi40MDYgMjI3LjVsNjEuNSA2MS41NjJjNjIuMjgyIDYyLjI1IDQxLjE1NiAxMTMuMTg4LTQ2Ljg3NiAxMTMuMTg4TDAgNDAyLjI1bDAgMjE5LjQzOCA4Ny4wMzIgMGM4OC4wMzIgMCAxMDkuMTU2IDUwLjkzOCA0Ni44NzYgMTEzLjI1bC02MS41IDYxLjUgMTU1LjEyNiAxNTUuMTg4IDYxLjUzMi02MS41NjJjNjIuMjE4LTYyLjE4OCAxMTMuMDMyLTQxLjE4OCAxMTMuMjgyIDQ2LjYyNkw0MDIuMzQ4IDEwMjRsMjE5LjM0NCAwIDAtODYuNDM4YzAtMC4xODggMC4xMjYtMC4zNzYgMC4xMjYtMC41NjItMC4xODgtODguMDYyIDUwLjgxMi0xMDkuMTI2IDExMy4xMjYtNDYuOTM4bDYxLjUgNjEuNTYyIDE1NS4xODgtMTU1LjE4OC02MS41NjItNjEuNUM4MjcuODc2IDY3Mi42MjYgODQ4Ljg3NiA2MjEuNjg4IDkzNy4wNjIgNjIxLjY4OHpNNTEyIDcwNGMtMTA2LjAzMiAwLTE5Mi04Ni0xOTItMTkyczg1Ljk2OC0xOTIgMTkyLTE5MmMxMDYgMCAxOTIgODYgMTkyIDE5MlM2MTggNzA0IDUxMiA3MDR6IiBwLWlkPSIzNDQxIj48L3BhdGg+PC9zdmc+");
                 background-size: 16px 16px;
                 background-repeat: no-repeat;
@@ -1605,7 +1650,7 @@
                 flex: none;
                 height: 48px;
                 line-height: 48px;
-                text-align: right;
+                text-align: center;
             }
 
             #godPanel #godDetailPanel .label-text {
@@ -1614,12 +1659,13 @@
 
             #godPanel #godDetailPanel .required-star {
                 line-height: 32px;
-                color: #cf0842;
+                color: ${godInfo.theme.starColor};
                 margin-left: 5px;
             }
 
             #godPanel #godDetailPanel input,
             #godPanel #godDetailPanel select {
+                box-sizing: border-box;
                 width: 200px;
                 height: 32px;
                 line-height: 32px;
@@ -1631,6 +1677,7 @@
             }
 
             #godPanel #godDetailPanel textarea {
+                box-sizing: border-box;
                 width: 200px;
                 min-height: 128px;
                 line-height: 24px;
@@ -1663,7 +1710,7 @@
                 margin: 0;
                 padding: 0;
                 vertical-align: middle;
-                background-color: #fff;
+                background-color: ${godInfo.theme.basicBgColor};
                 outline: none;
                 -webkit-appearance: none;
                 -moz-appearance: none;
@@ -1686,8 +1733,8 @@
                 display: block;
                 width: 200px;
                 height: 32px;
-                background-color: #666;
-                color: #fff;
+                background-color: ${godInfo.theme.buttonBgColor};
+                color: ${godInfo.theme.primaryColor};
                 overflow: hidden;
                 border-radius: 8px;
                 border: none;
@@ -1698,32 +1745,36 @@
 
             #godPanel #godDetailPanel label.label-file:hover {
                 background-color: ${godInfo.theme.primaryColor};
+                color: ${godInfo.theme.basicBgColor};
             }
 
             #godPanel #godDetailPanel label.label-file:active {
-                background-color: #000;
-                color: #fff;
+                background-color: ${godInfo.theme.buttonActiveBgColor};
+                color: ${godInfo.theme.basicBgColor};
             }
 
             #godPanel #godDetailPanel button {
                 min-width: 100px;
                 height: 32px;
-                background-color: #666;
-                color: #fff;
+                background-color: ${godInfo.theme.buttonBgColor};
+                color: ${godInfo.theme.primaryColor};
                 overflow: hidden;
                 border-radius: 8px;
                 border: none;
                 padding: 0 8px 0 8px;
                 margin-left: 10px;
+                vertical-align: top;
+                margin-top: 12px;
             }
 
             #godPanel #godDetailPanel button:hover {
                 background-color: ${godInfo.theme.primaryColor};
+                color: ${godInfo.theme.basicBgColor};
             }
 
             #godPanel #godDetailPanel button:active {
-                background-color: #000;
-                color: #fff;
+                background-color: ${godInfo.theme.buttonActiveBgColor};
+                color: ${godInfo.theme.basicBgColor};
             }
 
             #godPanel #godDetailPanel section.body-panel {
@@ -1904,29 +1955,36 @@
         godInfo.godBackground = document.getElementById("godBackground");
         godInfo.godContentPanel = document.getElementById("godContentPanel");
 
-        let loadingValue = false;
+        let loadingValue = 0;
         let loadingTimeout = null;
         Object.defineProperty(godInfo, "loading", {
             configurable: true,
             enumerable: true,
             get: () => {
-                return loadingValue;
+                return loadingValue > 0;
             },
             set: val => {
-                loadingValue = val === true;
-                if(loadingValue) {
-                    loadingTimeout = setTimeout(() => {
-                        loadingTimeout = null;
-                        document.getElementById("loadingElement")?.classList.add("loading-show");
-                        document.getElementById("detailContentPanel")?.classList.add("content-panel-disabled");
-                    }, 1000);
-                } else {
-                    if(loadingTimeout) {
-                        clearTimeout(loadingTimeout);
-                        loadingTimeout = null;
+                if(!!val) {
+                    loadingValue++;
+                    if(loadingValue === 1) {
+                        loadingTimeout = setTimeout(() => {
+                            loadingTimeout = null;
+                            document.getElementById("loadingElement")?.classList.add("loading-show");
+                            document.getElementById("detailContentPanel")?.classList.add("content-panel-disabled");
+                        }, 1000);
                     }
-                    document.getElementById("loadingElement")?.classList.remove("loading-show");
-                    document.getElementById("detailContentPanel")?.classList.remove("content-panel-disabled");
+                } else {
+                    if(loadingValue > 0) {
+                        loadingValue--;
+                        if(loadingValue === 0) {
+                            if(loadingTimeout) {
+                                clearTimeout(loadingTimeout);
+                                loadingTimeout = null;
+                            }
+                            document.getElementById("loadingElement")?.classList.remove("loading-show");
+                            document.getElementById("detailContentPanel")?.classList.remove("content-panel-disabled");
+                        }
+                    }
                 }
             }
         });
