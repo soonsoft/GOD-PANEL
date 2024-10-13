@@ -1,10 +1,4 @@
 ;(function() {
-
-    const contentType = {
-        json: "application/json",
-        file: "multipart/form-data",
-        form: "application/x-www-form-urlencoded"
-    };
     const godInfo = {
         theme: {
             primaryColor: "rgb(44, 108, 128)",
@@ -217,6 +211,14 @@
         return "";
     }
 
+    function nextTick(fn) {
+        return setTimeout(fn);
+    }
+
+    function generateId() {
+        //return value
+    }
+
     function saveAs(blob, filename) {
         let alink = document.createElement("a");
         alink.style = "margin-left: -100px";
@@ -309,6 +311,7 @@
 
     /**
      * 数据请求
+     * 默认是 application/json 格式，如果需要form，data 请使用 FormData
      * @param {*} url 
      * @param {*} method GET / POST
      * @param {*} data ArrayBuffer / ArrayBufferView(Unit8Array等) / Blob / string / URLSearchParams / FormData
@@ -344,7 +347,7 @@
         function initHeader() {
             const defaultHeaders = {};
             if(hasRequestBody && requestDataType === "json") {
-                defaultHeaders["Content-Type"] = contentType[requestDataType];
+                defaultHeaders["Content-Type"] = "application/json";
             }
             if(isFunction(godInfo.http.setDefaultHeaders)) {
                 godInfo.http.setDefaultHeaders(defaultHeaders);
@@ -429,13 +432,17 @@
     //#region UI
 
     function initUI() {
-        // Json 结果集展示
-        function resultRender(data, formatter) {
+        function resultRender(html) {
             let resultPanel = godDetailPanel.querySelector(".result-panel");
             if(!resultPanel) {
                 return;
             }
 
+            replaceHtml(resultPanel, html);
+        }
+
+        // Json 结果集展示
+        function jsonRender(data, formatter) {
             if(data instanceof Error) {
                 data = data.message;
             }
@@ -513,32 +520,28 @@
                     htmlBuilder.push(createArrayitem(item.value, item.index, item.formatter));
                 } else if(typeof item.value === "object" && item.value) {
                     if(Array.isArray(item.value)) {
-                        if(isFunction(formatter)) {
-                            htmlBuilder.push(formatter(item.value));
-                        } else {
-                            let temp = [];
-                            let formatterFn = formatter ? formatter[item.name] : undefined;
-                            let len = item.value.length;
-                            for(let i = 0; i < len; i++) {
-                                let elem = item.value[i];
-                                if(elem) {
-                                    temp.push({
-                                        arrayElem: 1,
-                                        formatter: formatterFn,
-                                        index: i,
-                                        len: len,
-                                        value: elem,
-                                        level: item.level + 1,
-                                        begin: 0,
-                                        end: 0
-                                    });
-                                }
+                        let temp = [];
+                        let formatterFn = formatter ? formatter[item.name] : undefined;
+                        let len = item.value.length;
+                        for(let i = 0; i < len; i++) {
+                            let elem = item.value[i];
+                            if(elem) {
+                                temp.push({
+                                    arrayElem: 1,
+                                    formatter: formatterFn,
+                                    index: i,
+                                    len: len,
+                                    value: elem,
+                                    level: item.level + 1,
+                                    begin: 0,
+                                    end: 0
+                                });
                             }
-                            if(temp.length > 0) {
-                                temp[temp.length - 1].end += item.end;
-                                item.end = 0;
-                                temp.reverse().forEach(e => stack.push(e));
-                            }
+                        }
+                        if(temp.length > 0) {
+                            temp[temp.length - 1].end += item.end;
+                            item.end = 0;
+                            temp.reverse().forEach(e => stack.push(e));
                         }
                     } else {
                         let keys = Object.keys(item.value);
@@ -580,8 +583,8 @@
                     htmlBuilder.push('</div>');
                 }
             }
-            
-            replaceHtml(resultPanel, htmlBuilder.join(""));
+
+            resultRender(htmlBuilder.join(""));
         }
 
         function tableRender(columns, data) {
@@ -655,17 +658,77 @@
                 return htmlBuilder.join("");
             }
 
-            return `
+            resultRender(`
                 <table class="table-view" cellspacing="0" cellpadding="0">
                     ${colgroup(columns)}
                     ${thead(columns)}
                     ${tbody(columns, data)}
                 </table>
-            `;
+            `);
         }
 
-        function imageRender(blob) {
+        function imageRender() {
+            let htmlBuilder = [];
+            if(arguments.length === 0) {
+                return;
+            }
 
+            let imageArgIndex = 0;
+            let options = arguments[0];
+            if(typeof options === "object" && !(options instanceof Blob) && !(options instanceof ArrayBuffer)) {
+                if(options instanceof Blob) {
+                    imageArgIndex++;
+                    options = {
+                        type: "blob"
+                    };
+                } else if(options instanceof ArrayBuffer) {
+                    imageArgIndex++;
+                    options = {
+                        type: "arrayBuffer"
+                    };
+                } else {
+                    options.type = isEmpty(options.type) ? "url" : options.type;
+                }
+            } else {
+                options = {
+                    type: "url"
+                }
+            }
+
+            let argArray = Array.prototype.slice.call(arguments, imageArgIndex, arguments.length);
+            let afterTasks = [];
+            for(let i = 0; i < argArray.length; i++) {
+                let arg = argArray[i];
+                if(options.type === "url") {
+                    htmlBuilder.push(`<img class="image-view" src="${arg}">`);
+                } else if(options.type === "base64") {
+                    let mime, data;
+                    if(typeof arg === "string") {
+                        mime = options.mime;
+                        data = arg;
+                    } else {
+                        mime = arg.mime || options.mime;
+                        data = arg.data;
+                    }
+                    htmlBuilder.push(`img class="image-view" src="data:${mime};base64,${data}"`);
+                } else {
+                    let imageId = "imageview::" + generateId() + "::" + (i + 1);
+                    let imgBlob = arg;
+                    if(options.type === "arrayBuffer") {
+                        imgBlob = new Blob(arg);
+                    }
+                    htmlBuilder.push(`<img id=${imageId} class="image-view">`);
+                    afterTasks.push(() => {
+                        let img = document.getElementById(imageId);
+                        if(img) {
+                            img.src = URL.createObjectURL(imgBlob);
+                        }
+                    });
+                }
+            }
+
+            resultRender(htmlBuilder.join(""));
+            afterTasks.forEach(fn => fn());
         }
 
         // 打开页面
@@ -809,10 +872,11 @@
             return htmlBuilder.join("");
         }
 
-        godInfo.ui.resultRender = resultRender;
+        godInfo.ui.jsonRender = jsonRender;
         godInfo.ui.formRender = formRender;
         godInfo.ui.buttonRender = buttonRender;
         godInfo.ui.tableRender = tableRender;
+        godInfo.ui.imageRender = imageRender;
 
         godInfo.ui.openPage = openPage;
         godInfo.ui.closePage = closePage;
@@ -862,11 +926,11 @@
                     {
                         text: "显示表单数据",
                         click: () => {
-                            if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                            if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
                                 return;
                             }
                             let vm = getCurrentViewModel();
-                            godInfo.ui.resultRender(vm);
+                            godInfo.ui.jsonRender(vm);
                         }
                     }
                 ],
@@ -883,14 +947,14 @@
                                     let files = fileInput.files;
                                     if(files.length === 0) {
                                         fileInput.value = "";
-                                        resultRender("没有选中文件");
+                                        jsonRender("没有选中文件");
                                         return;
                                     }
-                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
                                         return;
                                     }
                                     let vm = getCurrentViewModel();
-                                    godInfo.ui.resultRender(`开始上传 ${vm.fileName}`);
+                                    godInfo.ui.jsonRender(`开始上传 ${vm.fileName}`);
                                 }
                             }
                         ]
@@ -904,21 +968,21 @@
                             {
                                 text: "显示文件列表",
                                 click: () => {
-                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
                                         return;
                                     }
                                     let vm = getCurrentViewModel();
                                     let data = [
                                         `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
                                     ];
-                                    godInfo.ui.resultRender(data);
+                                    godInfo.ui.jsonRender(data);
                                 }
                             },
                             {
                                 actionName: "download",
                                 action: elem => {
                                     let fileName = elem.dataset.filename;
-                                    godInfo.ui.resultRender(`${fileName} 下载完成`);
+                                    godInfo.ui.jsonRender(`${fileName} 下载完成`);
                                 }
                             }
                         ]
@@ -956,7 +1020,8 @@
                             { value: "json", text: "Json", selected: true },
                             { value: "table", text: "Table" },
                             { value: "json-array", text: "Json Array" },
-                            { value: "text", text: "文本" }
+                            { value: "text", text: "文本" },
+                            { value: "image", text: "图片" }
                         ]
                     }
                 ],
@@ -964,12 +1029,19 @@
                     {
                         text: "显示视图",
                         click: () => {
-                            if(checkCurrentViewModel().invalid(v => godInfo.ui.resultRender(v.messages))) {
+                            if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
                                 return;
                             }
                             let vm = getCurrentViewModel();
                             let result, formatter;
                             switch(vm.viewMode) {
+                                case "image":
+                                    godInfo.ui.imageRender(
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg",
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg",
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png"
+                                    );
+                                    return;
                                 case "json":
                                     result = {
                                         customerName: "张信哲",
@@ -1024,8 +1096,8 @@
                                         { name: "Lucy", age: 18, gender: 0 },
                                         { name: "Lily", age: 19, gender: 0 }
                                     ];
-                                    formatter = arr => godInfo.ui.tableRender(arr);
-                                    break;
+                                    godInfo.ui.tableRender(result);
+                                    return;
                                 case "json-array":
                                     result = {
                                         customerName: "张信哲",
@@ -1060,7 +1132,7 @@
                                     result = "显示文本信息";
                                     break;
                             }
-                            godInfo.ui.resultRender(result, formatter);
+                            godInfo.ui.jsonRender(result, formatter);
                         }
                     }
                 ]
@@ -1919,6 +1991,11 @@
 
             #godPanel #godDetailPanel .table-view-th {
                 color: ${godInfo.theme.primaryColor};
+            }
+
+            #godPanel #godDetailPanel .image-view {
+                width: calc(100% - 20px);
+                margin: 10px 10px 0 10px;
             }
         `;
         document.getElementsByTagName("head").item(0).appendChild(style);
