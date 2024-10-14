@@ -626,8 +626,11 @@
                 if(Array.isArray(columns) && columns.length > 0) {
                     htmlBuilder.push("<thead>");
                     htmlBuilder.push("<tr>");
-                    columns.forEach(col => {
-                        htmlBuilder.push(`<th class="table-view-th" ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>${formatValue(col, col.text || col.column)}</th>`);
+                    columns.forEach((col, i) => {
+                        htmlBuilder.push(`<th class="table-view-th${i === columns.length - 1 ? ' table-view-cell-last' : ''}" 
+                            ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>
+                            ${formatValue(col, col.text || col.column)}
+                            </th>`);
                     });
                     htmlBuilder.push("</tr>");
                     htmlBuilder.push("</thead>");
@@ -641,11 +644,17 @@
                     htmlBuilder.push("<tbody>");
                     for(let i = 0; i < data.length; i++) {
                         let row = data[i];
+                        let isLastRow = i === data.length - 1;
                         htmlBuilder.push("<tr>");
                         if(typeof row === "object") {
                             for(let j = 0; j < columns.length; j++) {
                                 let col = columns[j];
-                                htmlBuilder.push(`<td class="table-view-td" ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>${formatValue(row, row[col.column])}</td>`);
+                                htmlBuilder.push(`<td class="table-view-td
+                                        ${j === columns.length - 1 ? ' table-view-cell-last' : ''}
+                                        ${isLastRow ? ' table-view-row-last' : ''}" 
+                                    ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>
+                                    ${formatValue(row, row[col.column])}
+                                    </td>`);
                             }
                         } else {
                             htmlBuilder.push(`<td class="table-view-td">${row}</td>`);
@@ -659,16 +668,17 @@
             }
 
             resultRender(`
-                <table class="table-view" cellspacing="0" cellpadding="0">
-                    ${colgroup(columns)}
-                    ${thead(columns)}
-                    ${tbody(columns, data)}
-                </table>
+                <div class="result-content-panel result-content-border">
+                    <table class="table-view" cellspacing="0" cellpadding="0">
+                        ${colgroup(columns)}
+                        ${thead(columns)}
+                        ${tbody(columns, data)}
+                    </table>
+                </div>
             `);
         }
 
         function imageRender() {
-            let htmlBuilder = [];
             if(arguments.length === 0) {
                 return;
             }
@@ -697,8 +707,13 @@
 
             let argArray = Array.prototype.slice.call(arguments, imageArgIndex, arguments.length);
             let afterTasks = [];
+            let htmlBuilder = [];
             for(let i = 0; i < argArray.length; i++) {
                 let arg = argArray[i];
+                if(isEmpty(arg)) {
+                    continue;
+                }
+                htmlBuilder.push(`<div class="result-content-panel">`);
                 if(options.type === "url") {
                     htmlBuilder.push(`<img class="image-view" src="${arg}">`);
                 } else if(options.type === "base64") {
@@ -710,7 +725,7 @@
                         mime = arg.mime || options.mime;
                         data = arg.data;
                     }
-                    htmlBuilder.push(`img class="image-view" src="data:${mime};base64,${data}"`);
+                    htmlBuilder.push(`<img class="image-view" src="data:${mime};base64,${data}" >`);
                 } else {
                     let imageId = "imageview::" + generateId() + "::" + (i + 1);
                     let imgBlob = arg;
@@ -725,6 +740,7 @@
                         }
                     });
                 }
+                htmlBuilder.push("</div>");
             }
 
             resultRender(htmlBuilder.join(""));
@@ -1969,14 +1985,23 @@
                 flex: none;
             }
 
+            #godPanel #godDetailPanel .result-content-panel {
+                width: calc(100% - 20px);
+                height: auto;
+                margin: 10px auto 10px auto;
+                border-radius: 6px;
+                overflow: hidden;
+            }
+
+            #godPanel #godDetailPanel .result-content-border {
+                border: solid 1px ${godInfo.theme.primaryColor};
+            }
+
             #godPanel #godDetailPanel .table-view {
                 table-layout: fixed;
-                width: calc(100% - 20px);
-                margin: 10px auto 10px auto;
+                width: 100% ;
                 border-spacing: 0;
                 border-collapse: collapse;
-                border-top: solid 1px ${godInfo.theme.primaryColor};
-                border-left: solid 1px ${godInfo.theme.primaryColor};
             }
 
             #godPanel #godDetailPanel .table-view-th,
@@ -1989,13 +2014,22 @@
                 border-right: solid 1px ${godInfo.theme.primaryColor};
             }
 
+            #godPanel #godDetailPanel .table-view-row-last {
+                border-bottom: none 0;
+            }
+            #godPanel #godDetailPanel .table-view-cell-last {
+                border-right: none 0;
+            }
+
             #godPanel #godDetailPanel .table-view-th {
                 color: ${godInfo.theme.primaryColor};
+                background-color: ${godInfo.theme.basicBgColor};
+                font-weight: bold;
             }
 
             #godPanel #godDetailPanel .image-view {
-                width: calc(100% - 20px);
-                margin: 10px 10px 0 10px;
+                width: 100%;
+                vertical-align: top;
             }
         `;
         document.getElementsByTagName("head").item(0).appendChild(style);
