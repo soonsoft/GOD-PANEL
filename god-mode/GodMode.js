@@ -1,4 +1,5 @@
 ;(function() {
+    const IdSymbol = Symbol("Id");
     const godInfo = {
         theme: {
             primaryColor: "rgb(44, 108, 128)",
@@ -189,19 +190,10 @@
         };
     }
 
-    function htmlNonNull(val, fn) {
-        if(isEmpty(val)) {
-            return "";
-        }
-        return fn(val);
-    }
-
     function htmlCondition(predicate, val, fn) {
-        if(isFunction(predicate) && predicate(val)) {
-            if(isFunction(fn)) {
-                fn(val);
-            } else {
-                return fn;
+        if(isFunction(predicate)) {
+            if(predicate(val)) {
+                return isFunction(fn) ? fn(val) : fn;
             }
         } else {
             if(!!predicate) {
@@ -216,7 +208,11 @@
     }
 
     function generateId() {
-        //return value
+        if(!godInfo[IdSymbol]) {
+            godInfo[IdSymbol] = 0;
+        }
+        godInfo[IdSymbol]++;
+        return godInfo[IdSymbol];
     }
 
     function saveAs(blob, filename) {
@@ -469,7 +465,7 @@
                 customHtml = htmlArr.join("");
                 return `
                     <div class="result-item">
-                        ${htmlNonNull(name, html`<label>${0}</label>`)}
+                        ${htmlCondition(isEmpty(name), html`<label>${0}</label>`)}
                         ${customHtml}
                     </div>
                 `;
@@ -605,8 +601,28 @@
                 }
             }
 
-            function formatValue(obj, val) {
-                return isFunction(obj.formatter) ? obj.formatter(val) : val;
+            function formatValue(column, row, val) {
+                return isFunction(column.formatter) ? column.formatter.call(row, val) : val;
+            }
+
+            function formatColumn(column, val) {
+                return isFunction(val) ? val(column) : val;
+            }
+
+            function getValue(row, column) {
+                if(!column || !row) {
+                    return "";
+                }
+                let arr = column.split(".");
+                let value = row;
+                for(let i = 0; i < arr.length; i++) {
+                    let col = arr[i].trim();
+                    if(!col) {
+                        continue;
+                    }
+                    value = value[col];
+                }
+                return value;
             }
 
             function colgroup(columns) {
@@ -614,7 +630,7 @@
                 if(Array.isArray(columns) && columns.length > 0) {
                     htmlBuilder.push("<colgroup>");
                     columns.forEach(col => {
-                        htmlBuilder.push(`<col ${htmlCondition(v => typeof v.width === "number", col, html`style="width:${'width'}px"`)}>`);
+                        htmlBuilder.push(`<col ${htmlCondition(v => typeof(v.width) === "number", col, html`style="width:${'width'}px"`)}>`);
                     });
                     htmlBuilder.push("</colgroup>");
                 }
@@ -628,8 +644,8 @@
                     htmlBuilder.push("<tr>");
                     columns.forEach((col, i) => {
                         htmlBuilder.push(`<th class="table-view-th${i === columns.length - 1 ? ' table-view-cell-last' : ''}" 
-                            ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>
-                            ${formatValue(col, col.text || col.column)}
+                            ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
+                            ${formatColumn(col, col.text || col.column)}
                             </th>`);
                     });
                     htmlBuilder.push("</tr>");
@@ -649,11 +665,9 @@
                         if(typeof row === "object") {
                             for(let j = 0; j < columns.length; j++) {
                                 let col = columns[j];
-                                htmlBuilder.push(`<td class="table-view-td
-                                        ${j === columns.length - 1 ? ' table-view-cell-last' : ''}
-                                        ${isLastRow ? ' table-view-row-last' : ''}" 
-                                    ${htmlCondition(v => !!v.align, col, html`style="text-align:${'align'}"`)}>
-                                    ${formatValue(row, row[col.column])}
+                                htmlBuilder.push(`<td class="table-view-td${j === columns.length - 1 ? ' table-view-cell-last' : ''}${isLastRow ? ' table-view-row-last' : ''}" 
+                                    ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
+                                    ${formatValue(col, row, getValue(row, col.column))}
                                     </td>`);
                             }
                         } else {
@@ -1034,7 +1048,8 @@
                         label: "请选择视图类型", 
                         options: [
                             { value: "json", text: "Json", selected: true },
-                            { value: "table", text: "Table" },
+                            { value: "table", text: "表格" },
+                            { value: "custom-table", text: "自定义表格" },
                             { value: "json-array", text: "Json Array" },
                             { value: "text", text: "文本" },
                             { value: "image", text: "图片" }
@@ -1107,12 +1122,30 @@
                                     };
                                     break;
                                 case "table":
-                                    result = [
+                                    godInfo.ui.tableRender([
                                         { name: "Jack", age: 30, gender: 1 },
                                         { name: "Lucy", age: 18, gender: 0 },
                                         { name: "Lily", age: 19, gender: 0 }
-                                    ];
-                                    godInfo.ui.tableRender(result);
+                                    ]);
+                                    return;
+                                case "custom-table":
+                                    godInfo.ui.tableRender(
+                                        [
+                                            { column: "code", text: "编码", align: "center", width: 100 },
+                                            { column: "fileName", text: "名称" },
+                                            { column: "type", text: "类型", width: 50, align: "center" },
+                                            { column: "count", text: "数量", width: 50, align: "right" },
+                                            { column: "extInfo", text: "状态", width: 80, align: "center", formatter: val => val.extName === ".pdf" ? "PDF" : "unknown" },
+                                            { column: "extInfo.updateTime", text: "更新时间", width: 120, align: "center" },
+                                            { text: "操作", width: 60, align: "center", formatter: () =>`<a href="javascript:void(0)">下载</a>` }
+                                        ], 
+                                        [
+                                            { code: "A001", fileName: "居民身份证.png", type: "703", count: 100, extInfo: { extName: ".png", updateTime: "2024-01-01" } },
+                                            { code: "A002", fileName: "来往港澳通行证.png", type: "702", count: 87, extInfo: { extName: ".pdf", updateTime: "2024-01-02" } },
+                                            { code: "A003", fileName: "国际护照.png", type: "711", count: 1, extInfo: { extName: ".png", updateTime: "2024-01-03" } },
+                                            { code: "A004", fileName: "台湾身份证.png", type: "707", count: 103, extInfo: { extName: ".pdf", updateTime: "2024-01-04" } }
+                                        ]
+                                    );
                                     return;
                                 case "json-array":
                                     result = {
