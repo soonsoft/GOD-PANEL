@@ -465,7 +465,7 @@
                 customHtml = htmlArr.join("");
                 return `
                     <div class="result-item">
-                        ${htmlCondition(isEmpty(name), html`<label>${0}</label>`)}
+                        ${htmlCondition(!isEmpty(name), name, html`<label>${0}</label>`)}
                         ${customHtml}
                     </div>
                 `;
@@ -601,12 +601,14 @@
                 }
             }
 
-            function formatValue(column, row, val) {
-                return isFunction(column.formatter) ? column.formatter.call(row, val) : val;
+            function formatValue(column, row, val, rowIndex, colIndex) {
+                return isFunction(column.formatter) 
+                        ? column.formatter(val, { row: row, column: column, rowIndex: rowIndex, colIndex: colIndex}) 
+                        : val;
             }
 
-            function formatColumn(column, val) {
-                return isFunction(val) ? val(column) : val;
+            function formatColumn(column, val, colIndex) {
+                return isFunction(val) ? val(column, colIndex) : val;
             }
 
             function getValue(row, column) {
@@ -645,7 +647,7 @@
                     columns.forEach((col, i) => {
                         htmlBuilder.push(`<th class="table-view-th${i === columns.length - 1 ? ' table-view-cell-last' : ''}" 
                             ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
-                            ${formatColumn(col, col.text || col.column)}
+                            ${formatColumn(col, (col.text || col.column), i)}
                             </th>`);
                     });
                     htmlBuilder.push("</tr>");
@@ -667,7 +669,7 @@
                                 let col = columns[j];
                                 htmlBuilder.push(`<td class="table-view-td${j === columns.length - 1 ? ' table-view-cell-last' : ''}${isLastRow ? ' table-view-row-last' : ''}" 
                                     ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
-                                    ${formatValue(col, row, getValue(row, col.column))}
+                                    ${formatValue(col, row, getValue(row, col.column), i, j)}
                                     </td>`);
                             }
                         } else {
@@ -1131,6 +1133,7 @@
                                 case "custom-table":
                                     godInfo.ui.tableRender(
                                         [
+                                            { text: "#", align: "right", width: 40, formatter: (_, op) => op.rowIndex + 1 },
                                             { column: "code", text: "编码", align: "center", width: 100 },
                                             { column: "fileName", text: "名称" },
                                             { column: "type", text: "类型", width: 50, align: "center" },
@@ -1941,6 +1944,15 @@
                 overflow: auto;
             }
 
+            #godPanel #godDetailPanel section.result-panel a {
+                color: ${godInfo.theme.primaryColor};
+                text-decoration: none;
+            }
+
+            #godPanel #godDetailPanel section.result-panel a:hover {
+                text-decoration: underline;
+            }
+
             #godPanel #godDetailPanel div.result-title {
                 flex: 1 1 100%;
                 height: 32px;
@@ -1995,15 +2007,6 @@
                 line-height: 40px;
                 margin-left: 5px;
                 flex: none;
-            }
-
-            #godPanel #godDetailPanel div.result-item a {
-                color: ${godInfo.theme.primaryColor};
-                text-decoration: none;
-            }
-
-            #godPanel #godDetailPanel div.result-item a:hover {
-                text-decoration: underline;
             }
 
             #godPanel #godDetailPanel div.result-item .before::before {
