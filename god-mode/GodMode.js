@@ -2,6 +2,13 @@
     const IdSymbol = Symbol("Id");
     const godInfo = {
         theme: {
+            /*
+                https://s.cn.bing.net/th?id=OHR.WhaleSharkDay_ZH-CN3334940631_1920x1080.webp&qlt=50
+                https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg
+                https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg
+                https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png
+             */
+            backgroundImage: "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-06-21.jpg",
             primaryColor: "rgb(44, 108, 128)",
             fontColor: "#000000",
             panelColor: "rgba(255, 255, 255, .4)",
@@ -1594,11 +1601,7 @@
                 position: absolute;
                 width: 100%;
                 height: 100%;
-                /*background-image: url('https://s.cn.bing.net/th?id=OHR.WhaleSharkDay_ZH-CN3334940631_1920x1080.webp&qlt=50');*/
-                /*background-image: url('https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg');*/
-                /*background-image: url('https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg');*/
-                /*background-image: url('https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png');*/
-                background-image: url('https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-06-21.jpg');
+                background-image: url('${godInfo.theme.backgroundImage}');
                 background-size: cover;
                 background-position: center;
                 background-repeat: no-repeat;
@@ -1944,6 +1947,10 @@
                 margin: 0 0 10px 0;
                 padding: 0;
                 list-style: none;
+            }
+
+            #godPanel #godDetailPanel .form-list li:first-child {
+                margin: 20px 0 10px 0;
             }
 
             #godPanel #godDetailPanel section.result-panel {
