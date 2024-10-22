@@ -583,8 +583,14 @@
             resultRender(htmlBuilder.join(""));
         }
 
-        function tableRender(columns, data) {
+        function tableRender(columns, data, renderFn) {
             if(arguments.length === 1) {
+                data = columns;
+                columns = null;
+            }
+
+            if(isFunction(data)) {
+                renderFn = data;
                 data = columns;
                 columns = null;
             }
@@ -599,6 +605,10 @@
                 if(typeof firstRow === "object" && !isEmpty(firstRow)) {
                     Object.keys(firstRow).forEach(k => columns.push({ column: k }));
                 }
+            }
+
+            if(!isFunction(renderFn)) {
+                renderFn = resultRender;
             }
 
             function formatValue(column, row, val, rowIndex, colIndex) {
@@ -645,10 +655,11 @@
                     htmlBuilder.push("<thead>");
                     htmlBuilder.push("<tr>");
                     columns.forEach((col, i) => {
-                        htmlBuilder.push(`<th class="table-view-th${i === columns.length - 1 ? ' table-view-cell-last' : ''}" 
-                            ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
-                            ${formatColumn(col, (col.text || col.column), i)}
-                            </th>`);
+                        htmlBuilder.push(`
+                            <th class="table-view-th" ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
+                                ${formatColumn(col, (col.text || col.column), i)}
+                            </th>
+                        `);
                     });
                     htmlBuilder.push("</tr>");
                     htmlBuilder.push("</thead>");
@@ -663,14 +674,15 @@
                     for(let i = 0; i < data.length; i++) {
                         let row = data[i];
                         let isLastRow = i === data.length - 1;
-                        htmlBuilder.push("<tr>");
+                        htmlBuilder.push('<tr class="table-view-row">');
                         if(typeof row === "object") {
                             for(let j = 0; j < columns.length; j++) {
                                 let col = columns[j];
-                                htmlBuilder.push(`<td class="table-view-td${j === columns.length - 1 ? ' table-view-cell-last' : ''}${isLastRow ? ' table-view-row-last' : ''}" 
-                                    ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
-                                    ${formatValue(col, row, getValue(row, col.column), i, j)}
-                                    </td>`);
+                                htmlBuilder.push(`
+                                    <td class="table-view-td" ${htmlCondition(col.align, col, html`style="text-align:${'align'}"`)}>
+                                        ${formatValue(col, row, getValue(row, col.column), i, j)}
+                                    </td>
+                                `);
                             }
                         } else {
                             htmlBuilder.push(`<td class="table-view-td">${row}</td>`);
@@ -683,7 +695,7 @@
                 return htmlBuilder.join("");
             }
 
-            resultRender(`
+            renderFn(`
                 <div class="result-content-panel result-content-border">
                     <table class="table-view" cellspacing="0" cellpadding="0">
                         ${colgroup(columns)}
@@ -806,6 +818,7 @@
                 return;
             }
 
+            godInfo.loading = false;
             godInfo.ui.onClosed(moduleInfo);
         }
 
@@ -824,13 +837,13 @@
                     htmlBuilder.push(`<label class="label-text">${e.label}</label>${insertStar(e.required)}<br>`);
                     switch(e.type) {
                         case "string":
-                            htmlBuilder.push(`<input type="text" data-property-name="${e.id}" value="${value}" />`);
+                            htmlBuilder.push(`<input id="${e.id}" type="text" data-property-name="${e.id}" value="${value}" />`);
                             break;
                         case "text":
-                            htmlBuilder.push(`<textarea data-property-name="${e.id}"></textarea>`);
+                            htmlBuilder.push(`<textarea id="${e.id}" data-property-name="${e.id}"></textarea>`);
                             break;
                         case "select":
-                            htmlBuilder.push(`<select data-property-name="${e.id}">`);
+                            htmlBuilder.push(`<select id="${e.id}" data-property-name="${e.id}">`);
                             htmlBuilder.push(`<option value="">请选择</option>`);
                             if(Array.isArray(e.options)) {
                                 e.options.forEach(option => {
@@ -867,13 +880,13 @@
                         case "file":
                             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
                                 <label class="label-file">
-                                    <input type="file" data-property-name="${e.id}" value="">
+                                    <input id="${e.id}" type="file" data-property-name="${e.id}" value="">
                                     <span>${e.label}</span>
                                 </label>
                             `);
                             break;
                         default:
-                            htmlBuilder.push(`<input type="${e.type}" data-property-name="${e.id}" value="${value}"`);
+                            htmlBuilder.push(`<input id="${e.id}" type="${e.type}" data-property-name="${e.id}" value="${value}"`);
                             ["min", "max", "step"].forEach(attr => {
                                 if(!isEmpty(e[attr])) {
                                     htmlBuilder.push(` ${attr}="${e[attr]}"`);
@@ -1031,12 +1044,6 @@
                         text: "开启",
                         click: () => {
                             godInfo.loading = true;
-                        }
-                    },
-                    {
-                        text: "关闭",
-                        click: () => {
-                            godInfo.loading = false;
                         }
                     }
                 ]
@@ -1253,7 +1260,7 @@
         }
 
         // 生成菜单
-        ;(function() {
+        (function() {
             godInfo.ui.onClosed(module => {
                 if(isFunction(module.onClosed)) {
                     module.onClosed.call(godInfo, module);
@@ -1780,6 +1787,7 @@
 
             #godPanel #godDetailPanel .label-text {
                 line-height: 32px;
+                color: ${godInfo.theme.primaryColor};
             }
 
             #godPanel #godDetailPanel .required-star {
@@ -2040,6 +2048,15 @@
                 border-collapse: collapse;
             }
 
+            #godPanel #godDetailPanel .table-view-row {
+                transition: background-color 240ms cubic-bezier(.4, 0, .6, 1) 0ms;
+            }
+
+            #godPanel #godDetailPanel .table-view-row:hover {
+                background-color: ${godInfo.theme.basicBgColor};
+                color: ${godInfo.theme.primaryColor};
+            }
+
             #godPanel #godDetailPanel .table-view-th,
             #godPanel #godDetailPanel .table-view-td {
                 padding: 0 5px 0 5px;
@@ -2050,17 +2067,19 @@
                 border-right: solid 1px ${godInfo.theme.primaryColor};
             }
 
-            #godPanel #godDetailPanel .table-view-row-last {
-                border-bottom: none 0;
-            }
-            #godPanel #godDetailPanel .table-view-cell-last {
-                border-right: none 0;
-            }
-
             #godPanel #godDetailPanel .table-view-th {
                 color: ${godInfo.theme.primaryColor};
                 background-color: ${godInfo.theme.basicBgColor};
                 font-weight: bold;
+            }
+
+            #godPanel #godDetailPanel .table-view-th:last-child,
+            #godPanel #godDetailPanel .table-view-td:last-child {
+                border-right: none 0;
+            }
+
+            #godPanel #godDetailPanel .table-view-row:last-child .table-view-td {
+                border-bottom: none 0;
             }
 
             #godPanel #godDetailPanel .image-view {
