@@ -1444,10 +1444,6 @@
                 }
             });
         })();
-
-        godInfo.getCurrentModule = getCurrentModule;
-        godInfo.getCurrentViewModel = getCurrentViewModel;
-        godInfo.checkCurrentViewModel = checkCurrentViewModel;
     }
     
     function insertStyle() {
