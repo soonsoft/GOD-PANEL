@@ -66,9 +66,280 @@
             }
             const callbackArr = godInfo.events[name];
             if(Array.isArray(callbackArr)) {
-                callbackArr.forEach(fn => fn.call(godInfo, obj));
+                callbackArr.forEach(fn => fn(obj));
             }
-        }
+        },
+        modules: [
+            {
+                menuText: "常规表单系统",
+                properties: [
+                    { id: "text1", type: "string", label: "文本框", value: "" },
+                    { id: "text2", type: "string", label: "必输项", value: "", required: true },
+                    { id: "textarea1", type: "text", label: "多行文本框", value: "" },
+                    { id: "number1", type: "number", label: "数字", step: 5 },
+                    { id: "date1", type: "date", label: "日期" },
+                    { id: "range1", type: "range", label: "滑动条", min: 0, max: 100, value: 25 },
+                    { 
+                        id: "select1", 
+                        type: "select", 
+                        label: "请选择国家与地区", 
+                        options: [
+                            { value: "CN", text: "中国大陆", selected: true },
+                            { value: "HK", text: "香港" },
+                            { value: "SG", text: "新加坡" },
+                            { value: "US", text: "美国" },
+                            { value: "UK", text: "英国" },
+                            { value: "RA", text: "俄罗斯" },
+                            { value: "FR", text: "法国" }
+                        ]
+                    },
+                    { 
+                        id: "checkbox1", 
+                        type: "checkbox", 
+                        label: "选择文件类型", 
+                        options: [
+                            { value: "json", text: "Json", selected: true },
+                            { value: "txt", text: "文本" },
+                            { value: "exe", text: "可执行文件" },
+                            { value: "app", text: "应用程序" },
+                            { value: "mp3", text: "音频文件", selected: true },
+                            { value: "mp4", text: "视频文件" }
+                        ]
+                    }
+                ],
+                button: [
+                    {
+                        text: "显示表单数据",
+                        action: ctx => {
+                            if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                return;
+                            }
+                            let vm = ctx.getCurrentViewModel();
+                            godInfo.ui.jsonRender(vm);
+                        }
+                    }
+                ],
+                subModules: [
+                    {
+                        menuText: "文件上传",
+                        properties: [
+                            { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", required: true, value: "" },
+                            { 
+                                id: "file", 
+                                type: "file", 
+                                label: "上传", 
+                                action: ctx => {
+                                    if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                        return;
+                                    }
+                                    let files = ctx.element.files;
+                                    let vm = ctx.getCurrentViewModel();
+                                    godInfo.ui.jsonRender(`开始上传 ${vm.fileName}`);
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        menuText: "文件下载",
+                        properties: [
+                            { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
+                        ],
+                        button: [
+                            {
+                                text: "显示文件列表",
+                                action: ctx => {
+                                    if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                        return;
+                                    }
+                                    let vm = ctx.getCurrentViewModel();
+                                    let data = [
+                                        `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
+                                    ];
+                                    godInfo.ui.jsonRender(data);
+                                }
+                            },
+                            {
+                                actionName: "download",
+                                action: ctx => {
+                                    let elem = ctx.element;
+                                    let fileName = elem.dataset.filename;
+                                    godInfo.ui.jsonRender(`${fileName} 下载完成`);
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                menuText: "测试 Loading",
+                properties: [
+                    { id: "gid", type: "string", label: "集团号", value: "" }
+                ],
+                button: [
+                    {
+                        text: "开启",
+                        action: ctx => {
+                            godInfo.loading = true;
+                        }
+                    }
+                ]
+            },
+            {
+                menuText: "显示结果集",
+                properties: [
+                    { 
+                        id: "viewMode", 
+                        type: "select", 
+                        label: "请选择视图类型", 
+                        options: [
+                            { value: "json", text: "Json", selected: true },
+                            { value: "table", text: "表格" },
+                            { value: "custom-table", text: "自定义表格" },
+                            { value: "json-array", text: "Json Array" },
+                            { value: "text", text: "文本" },
+                            { value: "image", text: "图片" }
+                        ]
+                    }
+                ],
+                button: [
+                    {
+                        text: "显示视图",
+                        action: ctx => {
+                            if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                return;
+                            }
+                            let vm = ctx.getCurrentViewModel();
+                            let result, formatter;
+                            switch(vm.viewMode) {
+                                case "image":
+                                    godInfo.ui.imageRender(
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg",
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg",
+                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png"
+                                    );
+                                    return;
+                                case "json":
+                                    result = {
+                                        customerName: "张信哲",
+                                        customerType: "个人客户",
+                                        userInfo: {
+                                            username: "Jeff",
+                                            cellPhone: "13976117766"
+                                        },
+                                        accountInfo: {
+                                            hkAccount: {
+                                                accountNo: "HK0011",
+                                                regionCode: "HK",
+                                                tradeAccount: [
+                                                    {
+                                                        tradeAccountType: "代理人账户",
+                                                        accountNo: "123456"
+                                                    },
+                                                    {
+                                                        tradeAccountType: "全委账户",
+                                                        accountNo: "987651"
+                                                    },
+                                                    {
+                                                        tradeAccountType: "小贷账户",
+                                                        accountNo: "135792"
+                                                    }
+                                                ]
+                                            },
+                                            sgAccount: {
+                                                accountNo: "SG2211",
+                                                regionCode: "SG",
+                                                tradeAccount: [
+                                                    {
+                                                        tradeAccountType: "直投账户",
+                                                        accountNo: "665588"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    };
+                                    formatter = {
+                                        tradeAccount: item => {
+                                            return [
+                                                item.tradeAccountType,
+                                                item.accountNo
+                                            ];
+                                        }
+                                    };
+                                    break;
+                                case "table":
+                                    godInfo.ui.tableRender([
+                                        { name: "Jack", age: 30, gender: 1 },
+                                        { name: "Lucy", age: 18, gender: 0 },
+                                        { name: "Lily", age: 19, gender: 0 }
+                                    ]);
+                                    return;
+                                case "custom-table":
+                                    godInfo.ui.tableRender(
+                                        [
+                                            { text: "#", align: "right", width: 40, formatter: (_, op) => op.rowIndex + 1 },
+                                            { column: "code", text: "编码", align: "center", width: 100 },
+                                            { column: "fileName", text: "名称" },
+                                            { column: "type", text: "类型", width: 50, align: "center" },
+                                            { column: "count", text: "数量", width: 50, align: "right" },
+                                            { column: "extInfo", text: "状态", width: 80, align: "center", formatter: val => val.extName === ".pdf" ? "PDF" : "unknown" },
+                                            { column: "extInfo.updateTime", text: "更新时间", width: 120, align: "center" },
+                                            { text: "操作", width: 60, align: "center", formatter: (_, op) =>`<a href="javascript:void(0)" data-action-name="download" data-value="${op.row.code}">下载</a>` }
+                                        ], 
+                                        [
+                                            { code: "A001", fileName: "居民身份证.png", type: "703", count: 100, extInfo: { extName: ".png", updateTime: "2024-01-01" } },
+                                            { code: "A002", fileName: "来往港澳通行证.png", type: "702", count: 87, extInfo: { extName: ".pdf", updateTime: "2024-01-02" } },
+                                            { code: "A003", fileName: "国际护照.png", type: "711", count: 1, extInfo: { extName: ".png", updateTime: "2024-01-03" } },
+                                            { code: "A004", fileName: "台湾身份证.png", type: "707", count: 103, extInfo: { extName: ".pdf", updateTime: "2024-01-04" } }
+                                        ]
+                                    );
+                                    return;
+                                case "json-array":
+                                    result = {
+                                        customerName: "张信哲",
+                                        customerNameEn: "Jeff",
+                                        bankcardList: [
+                                            {
+                                                bankName: "渣打银行",
+                                                bankAccountName: "张信哲",
+                                                bankAccountNo: "6623 8907 9876 1678 123"
+                                            },
+                                            {
+                                                bankName: "招商银行香港分行",
+                                                bankAccountName: "张信哲",
+                                                bankAccountNo: "7789 8907 9965 1678 123"
+                                            }
+                                        ],
+                                        certificates: [
+                                            "中国居民身份证", "港澳往来通行证", "美国护照", "台湾身份证"
+                                        ]
+                                    };
+                                    formatter = {
+                                        bankcardList: elem => {
+                                            return [
+                                                elem.bankName,
+                                                elem.bankAccountName,
+                                                elem.bankAccountNo
+                                            ];
+                                        }
+                                    };
+                                    break;
+                                default:
+                                    result = "显示文本信息";
+                                    break;
+                            }
+                            godInfo.ui.jsonRender(result, formatter);
+                        }
+                    },
+                    {
+                        actionName: "download",
+                        action: ctx => {
+                            let elem = ctx.element;
+                            alert(elem.dataset.value);
+                        }
+                    }
+                ]
+            }
+        ]
     };
 
     //#region Dom
@@ -590,6 +861,7 @@
             resultRender(htmlBuilder.join(""));
         }
 
+        // 表格展示
         function tableRender(columns, data, renderFn) {
             if(arguments.length === 1) {
                 data = columns;
@@ -713,6 +985,7 @@
             `);
         }
 
+        // 图片展示
         function imageRender() {
             if(arguments.length === 0) {
                 return;
@@ -780,53 +1053,6 @@
 
             resultRender(htmlBuilder.join(""));
             afterTasks.forEach(fn => fn());
-        }
-
-        // 打开页面
-        function openPage(moduleId) {
-            let moduleInfo = godInfo.getCurrentModule(moduleId);
-            if(!moduleInfo) {
-                return;
-            }
-
-            let elem = `
-                <div id="detailContentPanel" class="content-panel content-panel-actived">
-                    <section class="title-panel">
-                        <h1>${moduleInfo.menuText}</h1>
-                    </section>
-                    <section class="body-panel">
-                        <section class="form-panel">
-                            ${formRender(moduleInfo.properties)}
-                        </section>
-                        <section class="result-panel"></section>
-                    </section>
-                    ${buttonRender(moduleInfo.button)}
-                </div>
-                <div id="loadingElement" class="page-progress large circles">
-                    <span class="circle"></span>
-                    <span class="circle"></span>
-                    <span class="circle"></span>
-                    <span class="circle"></span>
-                    <span class="circle"></span>
-                    <span class="circle"></span>
-                </div>
-            `;
-            replaceHtml(godDetailPanel, elem);
-
-            godInfo.ui.onOpend(moduleInfo);
-        }
-        // 关闭页面
-        function closePage(moduleId) {
-            if(!moduleId) {
-                return;
-            }
-            let moduleInfo = godInfo.getCurrentModule(moduleId);
-            if(!moduleInfo) {
-                return;
-            }
-
-            godInfo.loading = false;
-            godInfo.ui.onClosed(moduleInfo);
         }
 
         // 生成表单
@@ -915,9 +1141,10 @@
             if(Array.isArray(buttonList) && buttonList.length > 0) {
                 htmlBuilder.push('<section class="button-panel">');
                 buttonList.forEach((b, i) => {
-                    if(!isFunction(b.action)) {
-                        htmlBuilder.push(`<button ${i === 0 ? "style=\"margin-left:0\"" : ""} data-button-index="${i}">${b.text}</button>`);
+                    if(isEmpty(b.text)) {
+                        return;
                     }
+                    htmlBuilder.push(`<button ${i === 0 ? "style=\"margin-left:0\"" : ""} data-button-index="${i}">${b.text}</button>`);
                 });
                 htmlBuilder.push('</section>');
             }
@@ -930,281 +1157,9 @@
         godInfo.ui.tableRender = tableRender;
         godInfo.ui.imageRender = imageRender;
 
-        godInfo.ui.openPage = openPage;
-        godInfo.ui.closePage = closePage;
-
     }
 
-    function defineModules(godMenuPanel, godDetailPanel) {
-        const modules = godInfo.modules = [
-            {
-                menuText: "常规表单系统",
-                properties: [
-                    { id: "text1", type: "string", label: "文本框", value: "" },
-                    { id: "text2", type: "string", label: "必输项", value: "", required: true },
-                    { id: "textarea1", type: "text", label: "多行文本框", value: "" },
-                    { id: "number1", type: "number", label: "数字", step: 5 },
-                    { id: "date1", type: "date", label: "日期" },
-                    { id: "range1", type: "range", label: "滑动条", min: 0, max: 100, value: 25 },
-                    { 
-                        id: "select1", 
-                        type: "select", 
-                        label: "请选择国家与地区", 
-                        options: [
-                            { value: "CN", text: "中国大陆", selected: true },
-                            { value: "HK", text: "香港" },
-                            { value: "SG", text: "新加坡" },
-                            { value: "US", text: "美国" },
-                            { value: "UK", text: "英国" },
-                            { value: "RA", text: "俄罗斯" },
-                            { value: "FR", text: "法国" }
-                        ]
-                    },
-                    { 
-                        id: "checkbox1", 
-                        type: "checkbox", 
-                        label: "选择文件类型", 
-                        options: [
-                            { value: "json", text: "Json", selected: true },
-                            { value: "txt", text: "文本" },
-                            { value: "exe", text: "可执行文件" },
-                            { value: "app", text: "应用程序" },
-                            { value: "mp3", text: "音频文件", selected: true },
-                            { value: "mp4", text: "视频文件" }
-                        ]
-                    }
-                ],
-                button: [
-                    {
-                        text: "显示表单数据",
-                        click: () => {
-                            if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
-                                return;
-                            }
-                            let vm = getCurrentViewModel();
-                            godInfo.ui.jsonRender(vm);
-                        }
-                    }
-                ],
-                subModules: [
-                    {
-                        menuText: "文件上传",
-                        properties: [
-                            { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", required: true, value: "" },
-                            { 
-                                id: "file", 
-                                type: "file", 
-                                label: "上传", 
-                                action: (fileInput, propertyInfo) => {
-                                    let files = fileInput.files;
-                                    if(files.length === 0) {
-                                        fileInput.value = "";
-                                        jsonRender("没有选中文件");
-                                        return;
-                                    }
-                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
-                                        return;
-                                    }
-                                    let vm = getCurrentViewModel();
-                                    godInfo.ui.jsonRender(`开始上传 ${vm.fileName}`);
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        menuText: "文件下载",
-                        properties: [
-                            { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
-                        ],
-                        button: [
-                            {
-                                text: "显示文件列表",
-                                click: () => {
-                                    if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
-                                        return;
-                                    }
-                                    let vm = getCurrentViewModel();
-                                    let data = [
-                                        `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
-                                    ];
-                                    godInfo.ui.jsonRender(data);
-                                }
-                            },
-                            {
-                                actionName: "download",
-                                action: elem => {
-                                    let fileName = elem.dataset.filename;
-                                    godInfo.ui.jsonRender(`${fileName} 下载完成`);
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            {
-                menuText: "测试 Loading",
-                properties: [
-                    { id: "gid", type: "string", label: "集团号", value: "" }
-                ],
-                button: [
-                    {
-                        text: "开启",
-                        click: () => {
-                            godInfo.loading = true;
-                        }
-                    }
-                ]
-            },
-            {
-                menuText: "显示结果集",
-                properties: [
-                    { 
-                        id: "viewMode", 
-                        type: "select", 
-                        label: "请选择视图类型", 
-                        options: [
-                            { value: "json", text: "Json", selected: true },
-                            { value: "table", text: "表格" },
-                            { value: "custom-table", text: "自定义表格" },
-                            { value: "json-array", text: "Json Array" },
-                            { value: "text", text: "文本" },
-                            { value: "image", text: "图片" }
-                        ]
-                    }
-                ],
-                button: [
-                    {
-                        text: "显示视图",
-                        click: () => {
-                            if(checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
-                                return;
-                            }
-                            let vm = getCurrentViewModel();
-                            let result, formatter;
-                            switch(vm.viewMode) {
-                                case "image":
-                                    godInfo.ui.imageRender(
-                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg",
-                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg",
-                                        "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png"
-                                    );
-                                    return;
-                                case "json":
-                                    result = {
-                                        customerName: "张信哲",
-                                        customerType: "个人客户",
-                                        userInfo: {
-                                            username: "Jeff",
-                                            cellPhone: "13976117766"
-                                        },
-                                        accountInfo: {
-                                            hkAccount: {
-                                                accountNo: "HK0011",
-                                                regionCode: "HK",
-                                                tradeAccount: [
-                                                    {
-                                                        tradeAccountType: "代理人账户",
-                                                        accountNo: "123456"
-                                                    },
-                                                    {
-                                                        tradeAccountType: "全委账户",
-                                                        accountNo: "987651"
-                                                    },
-                                                    {
-                                                        tradeAccountType: "小贷账户",
-                                                        accountNo: "135792"
-                                                    }
-                                                ]
-                                            },
-                                            sgAccount: {
-                                                accountNo: "SG2211",
-                                                regionCode: "SG",
-                                                tradeAccount: [
-                                                    {
-                                                        tradeAccountType: "直投账户",
-                                                        accountNo: "665588"
-                                                    }
-                                                ]
-                                            }
-                                        }
-                                    };
-                                    formatter = {
-                                        tradeAccount: elem => {
-                                            return [
-                                                elem.tradeAccountType,
-                                                elem.accountNo
-                                            ];
-                                        }
-                                    };
-                                    break;
-                                case "table":
-                                    godInfo.ui.tableRender([
-                                        { name: "Jack", age: 30, gender: 1 },
-                                        { name: "Lucy", age: 18, gender: 0 },
-                                        { name: "Lily", age: 19, gender: 0 }
-                                    ]);
-                                    return;
-                                case "custom-table":
-                                    godInfo.ui.tableRender(
-                                        [
-                                            { text: "#", align: "right", width: 40, formatter: (_, op) => op.rowIndex + 1 },
-                                            { column: "code", text: "编码", align: "center", width: 100 },
-                                            { column: "fileName", text: "名称" },
-                                            { column: "type", text: "类型", width: 50, align: "center" },
-                                            { column: "count", text: "数量", width: 50, align: "right" },
-                                            { column: "extInfo", text: "状态", width: 80, align: "center", formatter: val => val.extName === ".pdf" ? "PDF" : "unknown" },
-                                            { column: "extInfo.updateTime", text: "更新时间", width: 120, align: "center" },
-                                            { text: "操作", width: 60, align: "center", formatter: () =>`<a href="javascript:void(0)">下载</a>` }
-                                        ], 
-                                        [
-                                            { code: "A001", fileName: "居民身份证.png", type: "703", count: 100, extInfo: { extName: ".png", updateTime: "2024-01-01" } },
-                                            { code: "A002", fileName: "来往港澳通行证.png", type: "702", count: 87, extInfo: { extName: ".pdf", updateTime: "2024-01-02" } },
-                                            { code: "A003", fileName: "国际护照.png", type: "711", count: 1, extInfo: { extName: ".png", updateTime: "2024-01-03" } },
-                                            { code: "A004", fileName: "台湾身份证.png", type: "707", count: 103, extInfo: { extName: ".pdf", updateTime: "2024-01-04" } }
-                                        ]
-                                    );
-                                    return;
-                                case "json-array":
-                                    result = {
-                                        customerName: "张信哲",
-                                        customerNameEn: "Jeff",
-                                        bankcardList: [
-                                            {
-                                                bankName: "渣打银行",
-                                                bankAccountName: "张信哲",
-                                                bankAccountNo: "6623 8907 9876 1678 123"
-                                            },
-                                            {
-                                                bankName: "招商银行香港分行",
-                                                bankAccountName: "张信哲",
-                                                bankAccountNo: "7789 8907 9965 1678 123"
-                                            }
-                                        ],
-                                        certificates: [
-                                            "中国居民身份证", "港澳往来通行证", "美国护照", "台湾身份证"
-                                        ]
-                                    };
-                                    formatter = {
-                                        bankcardList: elem => {
-                                            return [
-                                                elem.bankName,
-                                                elem.bankAccountName,
-                                                elem.bankAccountNo
-                                            ];
-                                        }
-                                    };
-                                    break;
-                                default:
-                                    result = "显示文本信息";
-                                    break;
-                            }
-                            godInfo.ui.jsonRender(result, formatter);
-                        }
-                    }
-                ]
-            }
-        ];
-
+    function initModules(godMenuPanel, godDetailPanel, modules) {
         function getCurrentModule(id) {
             if(!id) {
                 id = godInfo.currentMenuId;
@@ -1243,12 +1198,23 @@
                     let idArr = Array.prototype.slice.call(arguments, 0, arguments.length);
                     properties = properties.filter(p => idArr.include(p.id));
                 }
-                properties.forEach((e, i) => {
-                    if(e.required && isEmpty(e.value)) {
-                        result.messages.push(`${e.label || e.id}不能为空`);
+                properties.forEach((p, i) => {
+                    if(p.required && isEmpty(p.value)) {
+                        if(p.type === "file") {
+                            let fileInput = document.getElementById(p.id);
+                            if(fileInput && fileInput.files.length === 0) {
+                                fileInput.value = "";
+                                result.messages.push(`${p.label || p.id}未选择文件`);
+                            }
+                        } else {
+                            if(isEmpty(p.value)) {
+                                result.messages.push(`${p.label || p.id}不能为空`);
+                            }
+                        }
+                        
                     }
-                    if(isFunction(e.validate) && !e.validate(e.value)) {
-                        result.messages.push(`${e.label || e.id}的值不符合要求`);
+                    if(isFunction(p.validate) && !p.validate(e.value)) {
+                        result.messages.push(`${p.label || p.id}的值不符合要求`);
                     }
                 });
             }
@@ -1266,11 +1232,71 @@
             return result;
         }
 
+        // 打开页面
+        function openPage(moduleId) {
+            let moduleInfo = getCurrentModule(moduleId);
+            if(!moduleInfo) {
+                return;
+            }
+
+            let elem = `
+                <div id="detailContentPanel" class="content-panel content-panel-actived">
+                    <section class="title-panel">
+                        <h1>${moduleInfo.menuText}</h1>
+                    </section>
+                    <section class="body-panel">
+                        <section class="form-panel">
+                            ${godInfo.ui.formRender(moduleInfo.properties)}
+                        </section>
+                        <section class="result-panel"></section>
+                    </section>
+                    ${godInfo.ui.buttonRender(moduleInfo.button)}
+                </div>
+                <div id="loadingElement" class="page-progress large circles">
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                    <span class="circle"></span>
+                </div>
+            `;
+            replaceHtml(godDetailPanel, elem);
+
+            godInfo.ui.onOpend(moduleInfo);
+        }
+
+        // 关闭页面
+        function closePage(moduleId) {
+            if(!moduleId) {
+                return;
+            }
+            let moduleInfo = getCurrentModule(moduleId);
+            if(!moduleInfo) {
+                return;
+            }
+
+            godInfo.loading = false;
+            godInfo.ui.onClosed(moduleInfo);
+        }
+
+        function callAction(actionInfo, module, elem) {
+            if(actionInfo && isFunction(actionInfo.action)) {
+                actionInfo.action({
+                    element: elem,
+                    module,
+                    actionInfo,
+                    getCurrentViewModel,
+                    checkCurrentViewModel
+                });
+            }
+        }
+
         // 生成菜单
         (function() {
             godInfo.ui.onClosed(module => {
                 if(isFunction(module.onClosed)) {
-                    module.onClosed.call(godInfo, module);
+                    module.onClosed(module);
                 }
 
                 if(Array.isArray(module.properties)) {
@@ -1281,7 +1307,7 @@
             });
             godInfo.ui.onOpend(module => {
                 if(isFunction(module.onOpend)) {
-                    module.onOpend.call(godInfo, module);
+                    module.onOpend(module);
                 }
             });
 
@@ -1341,13 +1367,13 @@
                             break;
                         }
                     }
-                    godInfo.ui.closePage(godInfo.currentMenuId);
+                    closePage(godInfo.currentMenuId);
 
                     elem.classList.add("menu-item-selected");
                     godInfo.currentMenuId = id;
 
-                    godInfo.ui.openPage(id);
-                }, false);
+                    openPage(id);
+                });
             }
         })();
 
@@ -1373,19 +1399,15 @@
                 if(elem.tagName === "BUTTON") {
                     let buttonIndex = elem.dataset.buttonIndex;
                     let buttonInfo = module.button[buttonIndex];
-                    if(buttonInfo && isFunction(buttonInfo.click)) {
-                        buttonInfo.click.call(module, elem);
-                    }
+                    callAction(buttonInfo, module, elem);
                 }
     
                 if(elem.tagName === "A") {
-                    let actionName = elem.dataset.action;
+                    let actionName = elem.dataset.actionName;
                     let buttonInfo = module.button.find(b => b.actionName === actionName);
-                    if(buttonInfo && isFunction(buttonInfo.action)) {
-                        buttonInfo.action.call(module, elem);
-                    }
+                    callAction(buttonInfo, module, elem);
                 }
-            }, false);
+            });
     
             on(godDetailPanel, "change", e => {
                 let elem = e.target;
@@ -1398,9 +1420,7 @@
                         if(propertyInfo.id === propertyName) {
                             switch(propertyInfo.type) {
                                 case "file":
-                                    if(isFunction(propertyInfo.action)) {
-                                        propertyInfo.action.call(module, elem, propertyInfo)
-                                    }
+                                    callAction(propertyInfo, module, elem);
                                     break;
                                 case "checkbox":
                                     let selectedValues = Array.isArray(propertyInfo.value) ? propertyInfo.value : [];
@@ -1414,7 +1434,7 @@
                                 default:
                                     propertyInfo.value = 
                                         isFunction(propertyInfo.convertor)
-                                            ? propertyInfo.convertor.call(module, value, propertyInfo)
+                                            ? propertyInfo.convertor(value, propertyInfo)
                                             : value;
                                     break;
                             }
@@ -1422,7 +1442,7 @@
                         }
                     }
                 }
-            }, false);
+            });
         })();
 
         godInfo.getCurrentModule = getCurrentModule;
@@ -2165,7 +2185,7 @@
 
         godInfo.godMenuPanel = document.getElementById("godMenuPanel");
         godInfo.godDetailPanel = document.getElementById("godDetailPanel");
-        defineModules(godInfo.godMenuPanel, godInfo.godDetailPanel);
+        initModules(godInfo.godMenuPanel, godInfo.godDetailPanel, godInfo.modules);
 
         const godPanel = document.getElementById("godPanel");
         const godHandle = document.getElementById("godHandle");
