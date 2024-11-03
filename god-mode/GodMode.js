@@ -100,7 +100,7 @@
                         options: [
                             { value: "json", text: "Json", selected: true },
                             { value: "txt", text: "文本" },
-                            { value: "exe", text: "可执行文件" },
+                            { value: "exe", text: "可执行文件自定义表格自定义表格自定义表格自定义表格自定义表格" },
                             { value: "app", text: "应用程序" },
                             { value: "mp3", text: "音频文件", selected: true },
                             { value: "mp4", text: "视频文件" }
@@ -171,7 +171,8 @@
                 ]
             },
             {
-                menuText: "测试 Loading",
+                menuText: "Loading 效果展示",
+                description: "用于展示 Loading 动画效果。开启后，请切换菜单选项关闭。",
                 properties: [
                     { id: "gid", type: "string", label: "集团号", value: "" }
                 ],
@@ -1243,6 +1244,7 @@
                 <div id="detailContentPanel" class="content-panel content-panel-actived">
                     <section class="title-panel">
                         <h1>${moduleInfo.menuText}</h1>
+                        ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
                     </section>
                     <section class="body-panel">
                         <section class="form-panel">
@@ -1787,7 +1789,11 @@
             #godPanel #godDetailPanel section.title-panel {
                 width: 100%;
                 height: 64px;
-                line-height: 64px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: center;
+                overflow: hidden;
             }
 
             #godPanel #godDetailPanel h1 {
@@ -1795,6 +1801,15 @@
                 text-align: left;
                 margin: 0;
                 padding: 0;
+                flex: auto 0 0;
+            }
+
+            #godPanel #godDetailPanel p {
+                lien-height: 1.2em;
+                margin: 0;
+                padding: 5px 0 5px 0;
+                flex: auto;
+                opacity: .6;
             }
 
             #godPanel #godDetailPanel section.button-panel {
@@ -1861,7 +1876,7 @@
                 border-radius: 4px;
                 margin: 0;
                 padding: 0;
-                vertical-align: middle;
+                vertical-align: text-top;
                 background-color: ${godInfo.theme.basicBgColor};
                 outline: none;
                 -webkit-appearance: none;
@@ -1955,6 +1970,7 @@
                 height: auto;
                 flex: none;
                 min-height: 90%;
+                max-width: 200px;
                 margin: 0;
                 padding: 0;
             }
