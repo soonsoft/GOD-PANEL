@@ -482,6 +482,65 @@
         return "";
     }
 
+    /*
+        NodeType:
+        1 - ELEMENT_NODE
+        2 - ATTRIBUTE_NODE
+        3 - TEXT_NODE
+        4 - CDATA_SECTION_NODE ( <!CDATA[[ … ]]> )
+        5 - undefined
+        6 - undefined
+        7 - PROCESSING_INSTRUCTION_NODE ( <?xml-stylesheet ... ?> )
+        8 - COMMENT_NODE ( <!-- … --> )
+        9 - DOCUMENT_NODE
+        10 - DOCUMENT_TYPE_NODE ( <!DOCTYPE html> )
+        11 - DOCUMENT_FRAGMENT_NODE
+    */
+    function parentElement(elem) {
+        if(!elem) {
+            return null;
+        }
+        if(elem.nodeType === 1) {
+            return elem.parentElement;
+        }
+        let parent = elem.parentNode;
+        while(parent && parent.nodeType !== 1) {
+            if(parent.nodeType === 9) {
+                break;
+            }
+            parent = parent.parentNode;
+        }
+        return parent;
+    }
+    
+    function nextElement(elem) {
+        if(!elem) {
+            return null;
+        }
+        if(elem.nodeType === 1) {
+            return elem.nextElementSibling;
+        }
+        let next = elem.nextSibling;
+        while(next && next.nodeType !== 1) {
+            next = elem.nextSibling;
+        }
+        return next;
+    }
+    
+    function previousElement(elem) {
+        if(!elem) {
+            return null;
+        }
+        if(elem.nodeType === 1) {
+            return elem.previousElementSibling;
+        }
+        let next = elem.previousSibling;
+        while(next && next.nodeType !== 1) {
+            next = elem.previousSibling;
+        }
+        return next;
+    }
+
     function nextTick(fn) {
         return setTimeout(fn);
     }
@@ -1145,7 +1204,7 @@
                     if(isEmpty(b.text)) {
                         return;
                     }
-                    htmlBuilder.push(`<button ${i === 0 ? "style=\"margin-left:0\"" : ""} data-button-index="${i}">${b.text}</button>`);
+                    htmlBuilder.push(`<button data-button-index="${i}">${b.text}</button>`);
                 });
                 htmlBuilder.push('</section>');
             }
@@ -1322,8 +1381,20 @@
                         <u>
                             <i ${htmlCondition(val => !!val, menuItem.icon, html`class="${0}"`)} style="margin-left: ${marginLeft}px"></i><span>${menuItem.menuText}</span>
                         </u>
+                        ${htmlCondition(Array.isArray(menuItem.subModules) && menuItem.subModules.length > 0, html`<a class="extend-button" href="javascript:void(0)"></a>`)}
                     </dt>
                 `;
+            }
+
+            function switchSubMenu(extendButton) {
+                let subMenuElement = extendButton.parentElement.nextElementSibling;
+                if(subMenuElement.classList.contains("submenu-opend")) {
+                    subMenuElement.classList.remove("submenu-opend");
+                    extendButton.classList.remove("extend-button-up");
+                } else {
+                    subMenuElement.classList.add("submenu-opend");
+                    extendButton.classList.add("extend-button-up");
+                }
             }
 
             const htmlBuilder = [];
@@ -1351,6 +1422,10 @@
                     let elem = e.target;
                     while(elem.tagName !== 'DT') {
                         if(elem.tagName === "DL" || elem.id === "godMenuPanel") {
+                            return;
+                        }
+                        if(elem.classList.contains("extend-button")) {
+                            switchSubMenu(elem);
                             return;
                         }
                         elem = elem.parentNode;
@@ -1390,7 +1465,7 @@
                     if(elem.id === "godDetailPanel") {
                         return;
                     }
-                    elem = elem.parentNode;
+                    elem = elem.parentElement;
                 }
     
                 let module = getCurrentModule();
@@ -1457,14 +1532,12 @@
                 top: 0;
                 left: 0;
                 opacity: 1;
-                visibility: block;
-                transition: opacity 320ms cubic-bezier(.4, 0, .6, 1) 16ms, visibility 0ms linear 0ms;
+                transition: opacity 320ms cubic-bezier(.4, 0, .6, 1) 16ms;
             }
 
             .app-hide {
-                visibility: hidden;
                 opacity: 0;
-                transition: opacity 320ms cubic-bezier(.4, 0, .6, 1) 0ms, visibility 0s linear 240ms;
+                transition: opacity 320ms cubic-bezier(.4, 0, .6, 1) 0ms;
             }
 
             #godHandle {
@@ -1689,6 +1762,7 @@
             #godPanel #godMenuPanel dl {
                 width: 100%;
                 height: auto;
+                min-height: 0;
             }
     
             #godPanel #godMenuPanel dt {
@@ -1748,9 +1822,55 @@
             #godPanel #godMenuPanel dt span {
                 font-size: 14px;
             }
+
+            #godPanel #godMenuPanel dt .extend-button {
+                position: absolute;
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                overflow: hidden;
+                background-color: rgba(255, 255, 255, 0);
+                vertical-align: top;
+                top: 12px;
+                right: 12px;
+                border-radius: 50%;
+                text-align: center;
+                transition: background-color .24s cubic-bezier(.4, 0, .6, 1) 0ms;
+                cursor: pointer;
+                transform: scaleY(1);
+            }
+
+            #godPanel #godMenuPanel dt .extend-button::after {
+                content: "";
+                width: 16px;
+                height: 16px;
+                display: inline-block;
+                vertical-align: top;
+                background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E %3Cpath fill='%23000' d='M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z'%3E%3C/path%3E %3C/svg%3E") center no-repeat;
+            }
+
+            #godPanel #godMenuPanel dt .extend-button:hover {
+                background-color: rgba(255, 255, 255, .4);
+            }
+
+            #godPanel #godMenuPanel dt .extend-button:active {
+                background-color: rgba(255, 255, 255, .8);
+            }
+
+            #godPanel #godMenuPanel dt .extend-button-up {
+                transform: scaleY(-1);
+            }
     
             #godPanel #godMenuPanel dd {
-                
+                width: 100%;
+                display: grid;
+                grid-template-rows: 0fr;
+                overflow: hidden;
+                transition: all .32s cubic-bezier(.4, 0, .6, 1) 0ms;
+            }
+
+            #godPanel #godMenuPanel dd.submenu-opend {
+                grid-template-rows: 1fr;
             }
     
             #godPanel #godDetailPanel {
@@ -1793,6 +1913,7 @@
                 flex-direction: column;
                 align-items: flex-start;
                 justify-content: center;
+                flex: none;
                 overflow: hidden;
             }
 
@@ -1805,7 +1926,7 @@
             }
 
             #godPanel #godDetailPanel p {
-                lien-height: 1.2em;
+                line-height: 1.2em;
                 margin: 0;
                 padding: 5px 0 5px 0;
                 flex: auto;
@@ -1934,6 +2055,10 @@
                 margin-top: 12px;
             }
 
+            #godPanel #godDetailPanel button:first-child {
+                margin-left: 0;
+            }
+
             #godPanel #godDetailPanel button:hover {
                 background-color: ${godInfo.theme.primaryColor};
                 color: ${godInfo.theme.basicBgColor};
@@ -1970,7 +2095,7 @@
                 height: auto;
                 flex: none;
                 min-height: 90%;
-                max-width: 200px;
+                max-width: 220px;
                 margin: 0;
                 padding: 0;
             }
@@ -2131,8 +2256,10 @@
 
     function insertGodPanel() {
         godInfo.app = document.getElementById("app");
+        let appDisplayValue = "block";
         if(godInfo.app) {
             godInfo.app.classList.add("app-default");
+            appDisplayValue = godInfo.app.style.display;
         }
 
         const template = `
@@ -2221,7 +2348,18 @@
         }
 
         if(godPanel && godHandle) {
-            godInfo.godPanel = godPanel;
+            // transitionend, transitionstart, transitioncancel
+            on(godPanel, "transitionend", event => {
+                if(godPanel.classList.contains("god-panel-show")) {
+                    if(godInfo.app) {
+                        godInfo.app.style.display = "none";
+                    }
+                } else {
+                    if(godInfo.app) {
+                        godInfo.app.style.display = appDisplayValue;
+                    }
+                }
+            });
             setTimeout(() => godPanelShow());
 
             on(godHandle, "click", e => godPanelShow());
