@@ -1,0 +1,24 @@
+{
+  "name": "god-panel",
+  "version": "1.0.0",
+  "description": "power by soonsoft",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soonsoft/GOD-PANEL.git"
+  },
+  "author": "soonsoft",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/soonsoft/GOD-PANEL/issues"
+  },
+  "homepage": "https://github.com/soonsoft/GOD-PANEL#readme",
+  "devDependencies": {
+    "vite": "^5.4.9"
+  }
+}

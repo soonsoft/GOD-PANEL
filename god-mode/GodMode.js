@@ -1826,24 +1826,25 @@
             #godPanel #godMenuPanel dt .extend-button {
                 position: absolute;
                 display: inline-block;
-                width: 16px;
-                height: 16px;
+                width: 20px;
+                height: 20px;
                 overflow: hidden;
                 background-color: rgba(255, 255, 255, 0);
                 vertical-align: top;
-                top: 12px;
-                right: 12px;
+                top: 10px;
+                right: 10px;
                 border-radius: 50%;
                 text-align: center;
-                transition: background-color .24s cubic-bezier(.4, 0, .6, 1) 0ms;
+                transition: background-color .24s cubic-bezier(.4, 0, .6, 1) 0ms, transform .24s cubic-bezier(.4, 0, .6, 1) 0ms;
                 cursor: pointer;
-                transform: scaleY(1);
+                transform: rotate3d(0, 0, -1, 0deg);
             }
 
             #godPanel #godMenuPanel dt .extend-button::after {
                 content: "";
-                width: 16px;
-                height: 16px;
+                width: 14px;
+                height: 14px;
+                margin-top: 4px;
                 display: inline-block;
                 vertical-align: top;
                 background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 512'%3E %3Cpath fill='%23000' d='M143 352.3L7 216.3c-9.4-9.4-9.4-24.6 0-33.9l22.6-22.6c9.4-9.4 24.6-9.4 33.9 0l96.4 96.4 96.4-96.4c9.4-9.4 24.6-9.4 33.9 0l22.6 22.6c9.4 9.4 9.4 24.6 0 33.9l-136 136c-9.2 9.4-24.4 9.4-33.8 0z'%3E%3C/path%3E %3C/svg%3E") center no-repeat;
@@ -1858,7 +1859,7 @@
             }
 
             #godPanel #godMenuPanel dt .extend-button-up {
-                transform: scaleY(-1);
+                transform: rotate3d(0, 0, -1, 180deg);
             }
     
             #godPanel #godMenuPanel dd {
