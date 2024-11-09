@@ -1,12 +1,13 @@
 import "./god-mode.css";
-import { ready, appendHtml, on, html, htmlCondition } from "../../src/common";
+import { ready, appendHtml, on } from "../../src/common";
 import { initModules, onClosed, setModuleDisabled } from "./modules/module-manager";
-import { onLoadingHidden, onLoadingShown, initLoading } from "../../src/ui/loading";
+import { onLoadingHidden, onLoadingShown, initLoading, hideLoading } from "../../src/ui/loading";
 
 const godInfo = {
+    version: "1.0.7"
 };
 
-onClosed(() => godInfo.loading = false);
+onClosed(() => hideLoading());
 
 function insertGodPanel() {
     godInfo.app = document.getElementById("app");
@@ -96,6 +97,6 @@ function loadingInitial() {
 ready(() => {
     insertGodPanel();
     loadingInitial();
-    initModules(godInfo.godMenuPanel, godInfo.godDetailPanel);
+    initModules(godInfo.godMenuPanel, godInfo.godDetailPanel, godInfo);
 });
 

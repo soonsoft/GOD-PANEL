@@ -168,6 +168,10 @@ div.loading-show {
     color: #000;
 }
 
+#godPanel .primary-color {
+    color: var(--primary-color);
+}
+
 div.god-panel-default {
     transform: translate3d(0, -100%, 0) scale3d(0.5, 0.5, 1);
     opacity: 0;
@@ -374,10 +378,6 @@ div.god-panel-show {
     display: flex;
     flex-direction: column;
     position: relative;
-}
-
-#godPanel #godDetailPanel .primary-color {
-    color: var(--primary-color);
 }
 
 #godPanel #godDetailPanel .content-panel {

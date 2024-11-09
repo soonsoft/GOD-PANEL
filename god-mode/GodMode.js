@@ -1,5 +1,6 @@
 ;(function() {
     const IdSymbol = Symbol("Id");
+    const defaultIcon = "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSIzNDQwIj48cGF0aCBkPSJNOTM3LjA2MiA2MjEuNjg4IDEwMjQgNjIxLjY4OCAxMDI0IDQwMi4yNWwtODYuOTM4IDBjLTg4LjE4OCAwLTEwOS4xODgtNTAuOTM4LTQ3LTExMy4xODhsNjEuNTYyLTYxLjU2Mi0xNTUuMTg4LTE1NS4xMjYtNjEuNSA2MS41Yy02Mi4zMTIgNjIuMzEyLTExMy4zMTIgNDEuMTg4LTExMy4xMjYtNDYuODc2IDAtMC4yNS0wLjEyNi0wLjM3Ni0wLjEyNi0wLjU2Mkw2MjEuNjg0IDAgNDAyLjM0NCAwbDAgODcuMjVjLTAuMjUgODcuODc2LTUxLjA2MiAxMDguODc2LTExMy4yODIgNDYuNjI2bC02MS41MzItNjEuNUw3Mi40MDYgMjI3LjVsNjEuNSA2MS41NjJjNjIuMjgyIDYyLjI1IDQxLjE1NiAxMTMuMTg4LTQ2Ljg3NiAxMTMuMTg4TDAgNDAyLjI1bDAgMjE5LjQzOCA4Ny4wMzIgMGM4OC4wMzIgMCAxMDkuMTU2IDUwLjkzOCA0Ni44NzYgMTEzLjI1bC02MS41IDYxLjUgMTU1LjEyNiAxNTUuMTg4IDYxLjUzMi02MS41NjJjNjIuMjE4LTYyLjE4OCAxMTMuMDMyLTQxLjE4OCAxMTMuMjgyIDQ2LjYyNkw0MDIuMzQ4IDEwMjRsMjE5LjM0NCAwIDAtODYuNDM4YzAtMC4xODggMC4xMjYtMC4zNzYgMC4xMjYtMC41NjItMC4xODgtODguMDYyIDUwLjgxMi0xMDkuMTI2IDExMy4xMjYtNDYuOTM4bDYxLjUgNjEuNTYyIDE1NS4xODgtMTU1LjE4OC02MS41NjItNjEuNUM4MjcuODc2IDY3Mi42MjYgODQ4Ljg3NiA2MjEuNjg4IDkzNy4wNjIgNjIxLjY4OHpNNTEyIDcwNGMtMTA2LjAzMiAwLTE5Mi04Ni0xOTItMTkyczg1Ljk2OC0xOTIgMTkyLTE5MmMxMDYgMCAxOTIgODYgMTkyIDE5MlM2MTggNzA0IDUxMiA3MDR6IiBwLWlkPSIzNDQxIj48L3BhdGg+PC9zdmc+";
     const godInfo = {
         theme: {
             /*
@@ -23,6 +24,7 @@
             basicBgColor: "#ffffff",
             basicFtColor: "#000000"
         },
+        version: "1.0.0",
         http: {
             host: "",
             carryCookie: true
@@ -72,6 +74,7 @@
         modules: [
             {
                 menuText: "常规表单系统",
+                icon: defaultIcon,
                 properties: [
                     { id: "text1", type: "string", label: "文本框", value: "" },
                     { id: "text2", type: "string", label: "必输项", value: "", required: true },
@@ -111,17 +114,18 @@
                     {
                         text: "显示表单数据",
                         action: ctx => {
-                            if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                            if(ctx.checkCurrentViewModel().invalid(v => ctx.jsonRender(v.messages))) {
                                 return;
                             }
                             let vm = ctx.getCurrentViewModel();
-                            godInfo.ui.jsonRender(vm);
+                            ctx.jsonRender(vm);
                         }
                     }
                 ],
                 subModules: [
                     {
                         menuText: "文件上传",
+                        icon: defaultIcon,
                         properties: [
                             { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", required: true, value: "" },
                             { 
@@ -129,18 +133,19 @@
                                 type: "file", 
                                 label: "上传", 
                                 action: ctx => {
-                                    if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                    if(ctx.checkCurrentViewModel().invalid(v => ctx.jsonRender(v.messages))) {
                                         return;
                                     }
                                     let files = ctx.element.files;
                                     let vm = ctx.getCurrentViewModel();
-                                    godInfo.ui.jsonRender(`开始上传 ${vm.fileName}`);
+                                    ctx.jsonRender(`开始上传 ${vm.fileName}`);
                                 }
                             }
                         ]
                     },
                     {
                         menuText: "文件下载",
+                        icon: defaultIcon,
                         properties: [
                             { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
                         ],
@@ -148,14 +153,14 @@
                             {
                                 text: "显示文件列表",
                                 action: ctx => {
-                                    if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                                    if(ctx.checkCurrentViewModel().invalid(v => ctx.jsonRender(v.messages))) {
                                         return;
                                     }
                                     let vm = ctx.getCurrentViewModel();
                                     let data = [
                                         `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
                                     ];
-                                    godInfo.ui.jsonRender(data);
+                                    ctx.jsonRender(data);
                                 }
                             },
                             {
@@ -163,7 +168,7 @@
                                 action: ctx => {
                                     let elem = ctx.element;
                                     let fileName = elem.dataset.filename;
-                                    godInfo.ui.jsonRender(`${fileName} 下载完成`);
+                                    ctx.jsonRender(`${fileName} 下载完成`);
                                 }
                             }
                         ]
@@ -172,6 +177,7 @@
             },
             {
                 menuText: "Loading 效果展示",
+                icon: defaultIcon,
                 description: "用于展示 Loading 动画效果。开启后，请切换菜单选项关闭。",
                 properties: [
                     { id: "gid", type: "string", label: "集团号", value: "" }
@@ -187,6 +193,7 @@
             },
             {
                 menuText: "显示结果集",
+                icon: defaultIcon,
                 properties: [
                     { 
                         id: "viewMode", 
@@ -206,14 +213,14 @@
                     {
                         text: "显示视图",
                         action: ctx => {
-                            if(ctx.checkCurrentViewModel().invalid(v => godInfo.ui.jsonRender(v.messages))) {
+                            if(ctx.checkCurrentViewModel().invalid(v => ctx.jsonRender(v.messages))) {
                                 return;
                             }
                             let vm = ctx.getCurrentViewModel();
                             let result, formatter;
                             switch(vm.viewMode) {
                                 case "image":
-                                    godInfo.ui.imageRender(
+                                    ctx.imageRender(
                                         "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-28.jpg",
                                         "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg",
                                         "https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-06-9.png"
@@ -268,14 +275,14 @@
                                     };
                                     break;
                                 case "table":
-                                    godInfo.ui.tableRender([
+                                    ctx.tableRender([
                                         { name: "Jack", age: 30, gender: 1 },
                                         { name: "Lucy", age: 18, gender: 0 },
                                         { name: "Lily", age: 19, gender: 0 }
                                     ]);
                                     return;
                                 case "custom-table":
-                                    godInfo.ui.tableRender(
+                                    ctx.tableRender(
                                         [
                                             { text: "#", align: "right", width: 40, formatter: (_, op) => op.rowIndex + 1 },
                                             { column: "code", text: "编码", align: "center", width: 100 },
@@ -328,7 +335,7 @@
                                     result = "显示文本信息";
                                     break;
                             }
-                            godInfo.ui.jsonRender(result, formatter);
+                            ctx.jsonRender(result, formatter);
                         }
                     },
                     {
@@ -339,6 +346,18 @@
                         }
                     }
                 ]
+            },
+            {
+                menuText: "关于",
+                icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI1NzM5Ij48cGF0aCBkPSJNNTIxLjIxNiA4Ny41MDU0NTVjLTU1Ljg1NDU0NSAwLTEwMi40IDQ2LjU0NTQ1NS0xMDIuNCAxMDIuNHM0Ni41NDU0NTUgMTAyLjQgMTAyLjQgMTAyLjQgMTAyLjQtNDYuNTQ1NDU1IDEwMi40LTEwMi40LTQ2LjU0NTQ1NS0xMDIuNC0xMDIuNC0xMDIuNHpNMjc5LjI3MjcyNyAzNzIuMzYzNjM2bC0wLjA5MzA5MSA2OC44ODcyNzNTNDE4LjkwOTA5MSA0MzEuMzgzMjczIDQxOC45MDkwOTEgNTU4LjU0NTQ1NXYxMzkuNjM2MzYzYzAgMTM5LjYzNjM2NC0xMzkuNzI5NDU1IDE2MS45NzgxODItMTM5LjcyOTQ1NSAxNjEuOTc4MTgyTDI3OS4yNzI3MjcgOTMwLjkwOTA5MWg0ODQuMDcyNzI4bC0wLjA5MzA5MS03MC43NDkwOTFzLTExMS43MDkwOTEgMC0xMTEuNzA5MDkxLTEzOS42MzYzNjRMNjUxLjYzNjM2NCA0NjUuNDU0NTQ1czAtOTMuMDkwOTA5LTkzLjA5MDkwOS05My4wOTA5MDlIMjc5LjI3MjcyN3oiIGZpbGw9IiMwMTAxMDEiIHAtaWQ9IjU3NDAiPjwvcGF0aD48L3N2Zz4=",
+                onOpend: ctx=> {
+                    ctx.jsonRender({
+                        "版本信息": {
+                            "版本号": godInfo.version
+                        }
+                    });
+                },
+                button: []
             }
         ]
     };
@@ -480,65 +499,6 @@
             }
         }
         return "";
-    }
-
-    /*
-        NodeType:
-        1 - ELEMENT_NODE
-        2 - ATTRIBUTE_NODE
-        3 - TEXT_NODE
-        4 - CDATA_SECTION_NODE ( <!CDATA[[ … ]]> )
-        5 - undefined
-        6 - undefined
-        7 - PROCESSING_INSTRUCTION_NODE ( <?xml-stylesheet ... ?> )
-        8 - COMMENT_NODE ( <!-- … --> )
-        9 - DOCUMENT_NODE
-        10 - DOCUMENT_TYPE_NODE ( <!DOCTYPE html> )
-        11 - DOCUMENT_FRAGMENT_NODE
-    */
-    function parentElement(elem) {
-        if(!elem) {
-            return null;
-        }
-        if(elem.nodeType === 1) {
-            return elem.parentElement;
-        }
-        let parent = elem.parentNode;
-        while(parent && parent.nodeType !== 1) {
-            if(parent.nodeType === 9) {
-                break;
-            }
-            parent = parent.parentNode;
-        }
-        return parent;
-    }
-    
-    function nextElement(elem) {
-        if(!elem) {
-            return null;
-        }
-        if(elem.nodeType === 1) {
-            return elem.nextElementSibling;
-        }
-        let next = elem.nextSibling;
-        while(next && next.nodeType !== 1) {
-            next = elem.nextSibling;
-        }
-        return next;
-    }
-    
-    function previousElement(elem) {
-        if(!elem) {
-            return null;
-        }
-        if(elem.nodeType === 1) {
-            return elem.previousElementSibling;
-        }
-        let next = elem.previousSibling;
-        while(next && next.nodeType !== 1) {
-            next = elem.previousSibling;
-        }
-        return next;
     }
 
     function nextTick(fn) {
@@ -1306,9 +1266,7 @@
                         ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
                     </section>
                     <section class="body-panel">
-                        <section class="form-panel">
-                            ${godInfo.ui.formRender(moduleInfo.properties)}
-                        </section>
+                        ${htmlCondition(Array.isArray(moduleInfo.properties) && moduleInfo.properties.length > 0, godInfo.ui.formRender(moduleInfo.properties), html`<section class="form-panel">${0}</section>`)}
                         <section class="result-panel"></section>
                     </section>
                     ${godInfo.ui.buttonRender(moduleInfo.button)}
@@ -1348,7 +1306,10 @@
                     module,
                     actionInfo,
                     getCurrentViewModel,
-                    checkCurrentViewModel
+                    checkCurrentViewModel,
+                    jsonRender: godInfo.ui.jsonRender,
+                    tableRender: godInfo.ui.tableRender,
+                    imageRender: godInfo.ui.imageRender
                 });
             }
         }
@@ -1368,18 +1329,29 @@
             });
             godInfo.ui.onOpend(module => {
                 if(isFunction(module.onOpend)) {
-                    module.onOpend(module);
+                    module.onOpend({
+                        module,
+                        callAction: actionName => {
+                            let buttonInfo = module.button.find(b => b.actionName === actionName);
+                            callAction(buttonInfo, module, elem);
+                        },
+                        getCurrentViewModel,
+                        checkCurrentViewModel,
+                        jsonRender: godInfo.ui.jsonRender,
+                        tableRender: godInfo.ui.tableRender,
+                        imageRender: godInfo.ui.imageRender
+                    });
                 }
             });
 
             function menuItemRender(menuItem, id, level) {
-                let marginLeft = 8 + 40 * level;
+                let marginLeft = 8 + 24 * level;
                 menuItem.id = id;
                 return `
                     <dt data-menu-id="${id}">
                         <b></b>
                         <u>
-                            <i ${htmlCondition(val => !!val, menuItem.icon, html`class="${0}"`)} style="margin-left: ${marginLeft}px"></i><span>${menuItem.menuText}</span>
+                            <i style="margin-left: ${marginLeft}px;${htmlCondition(icon => !isEmpty(icon), menuItem.icon, html`background-image:url(${0});`)}"></i><span>${menuItem.menuText}</span>
                         </u>
                         ${htmlCondition(Array.isArray(menuItem.subModules) && menuItem.subModules.length > 0, html`<a class="extend-button" href="javascript:void(0)"></a>`)}
                     </dt>
@@ -1677,6 +1649,10 @@
                 left: 0;
             }
 
+            #godPanel .primary-color {
+                color: ${godInfo.theme.primaryColor};
+            }
+
             div.god-panel-default {
                 transform: translate3d(0, -100%, 0) scale3d(0.5, 0.5, 1);
                 opacity: 0;
@@ -1811,7 +1787,6 @@
                 margin-left: 8px;
                 margin-right: 8px;
                 background-color: ${godInfo.theme.menuItemIconBgColor};
-                background-image: url("data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSIzNDQwIj48cGF0aCBkPSJNOTM3LjA2MiA2MjEuNjg4IDEwMjQgNjIxLjY4OCAxMDI0IDQwMi4yNWwtODYuOTM4IDBjLTg4LjE4OCAwLTEwOS4xODgtNTAuOTM4LTQ3LTExMy4xODhsNjEuNTYyLTYxLjU2Mi0xNTUuMTg4LTE1NS4xMjYtNjEuNSA2MS41Yy02Mi4zMTIgNjIuMzEyLTExMy4zMTIgNDEuMTg4LTExMy4xMjYtNDYuODc2IDAtMC4yNS0wLjEyNi0wLjM3Ni0wLjEyNi0wLjU2Mkw2MjEuNjg0IDAgNDAyLjM0NCAwbDAgODcuMjVjLTAuMjUgODcuODc2LTUxLjA2MiAxMDguODc2LTExMy4yODIgNDYuNjI2bC02MS41MzItNjEuNUw3Mi40MDYgMjI3LjVsNjEuNSA2MS41NjJjNjIuMjgyIDYyLjI1IDQxLjE1NiAxMTMuMTg4LTQ2Ljg3NiAxMTMuMTg4TDAgNDAyLjI1bDAgMjE5LjQzOCA4Ny4wMzIgMGM4OC4wMzIgMCAxMDkuMTU2IDUwLjkzOCA0Ni44NzYgMTEzLjI1bC02MS41IDYxLjUgMTU1LjEyNiAxNTUuMTg4IDYxLjUzMi02MS41NjJjNjIuMjE4LTYyLjE4OCAxMTMuMDMyLTQxLjE4OCAxMTMuMjgyIDQ2LjYyNkw0MDIuMzQ4IDEwMjRsMjE5LjM0NCAwIDAtODYuNDM4YzAtMC4xODggMC4xMjYtMC4zNzYgMC4xMjYtMC41NjItMC4xODgtODguMDYyIDUwLjgxMi0xMDkuMTI2IDExMy4xMjYtNDYuOTM4bDYxLjUgNjEuNTYyIDE1NS4xODgtMTU1LjE4OC02MS41NjItNjEuNUM4MjcuODc2IDY3Mi42MjYgODQ4Ljg3NiA2MjEuNjg4IDkzNy4wNjIgNjIxLjY4OHpNNTEyIDcwNGMtMTA2LjAzMiAwLTE5Mi04Ni0xOTItMTkyczg1Ljk2OC0xOTIgMTkyLTE5MmMxMDYgMCAxOTIgODYgMTkyIDE5MlM2MTggNzA0IDUxMiA3MDR6IiBwLWlkPSIzNDQxIj48L3BhdGg+PC9zdmc+");
                 background-size: 16px 16px;
                 background-repeat: no-repeat;
                 background-position: center;
@@ -1884,10 +1859,6 @@
                 display: flex;
                 flex-direction: column;
                 position: relative;
-            }
-
-            #godPanel #godDetailPanel .primary-color {
-                color: ${godInfo.theme.primaryColor};
             }
 
             #godPanel #godDetailPanel .content-panel {

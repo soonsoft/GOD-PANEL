@@ -4,12 +4,13 @@ import { addEventListener, dispatchEvent } from "../../../src/event";
 import { formModule } from "./form-module";
 import { loadingModule } from "./loading-module";
 import { renderModule } from "./render-module";
-
+import { aboutModule } from "./about-module";
 
 const modules = [
     formModule,
     loadingModule,
-    renderModule
+    renderModule,
+    aboutModule
 ];
 
 let currentMenuId;
@@ -105,9 +106,7 @@ function openPage(moduleId) {
                 ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
             </section>
             <section class="body-panel">
-                <section class="form-panel">
-                    ${formRender(moduleInfo.properties)}
-                </section>
+                ${htmlCondition(Array.isArray(moduleInfo.properties) && moduleInfo.properties.length > 0, formRender(moduleInfo.properties), html`<section class="form-panel">${0}</section>`)}
                 <section class="result-panel"></section>
             </section>
             ${buttonRender(moduleInfo.button)}
@@ -171,8 +170,7 @@ function callAction(actionInfo, module, elem) {
     }
 }
 
-function initModules(godMenuPanel, godDetailPanel) {
-
+function initModules(godMenuPanel, godDetailPanel, godInfo) {
     function menuItemRender(menuItem, id, level) {
         let marginLeft = 8 + 40 * level;
         menuItem.id = id;
@@ -180,7 +178,7 @@ function initModules(godMenuPanel, godDetailPanel) {
             <dt data-menu-id="${id}">
                 <b></b>
                 <u>
-                    <i ${htmlCondition(val => !!val, menuItem.icon, html`class="${0}"`)} style="margin-left: ${marginLeft}px"></i><span>${menuItem.menuText}</span>
+                    <i style="margin-left: ${marginLeft}px;${htmlCondition(icon => !isEmpty(icon), menuItem.icon, html`background-image:url(${0});`)}"></i><span>${menuItem.menuText}</span>
                 </u>
                 ${htmlCondition(Array.isArray(menuItem.subModules) && menuItem.subModules.length > 0, html`<a class="extend-button" href="javascript:void(0)"></a>`)}
             </dt>
@@ -200,7 +198,12 @@ function initModules(godMenuPanel, godDetailPanel) {
 
     onClosed(module => {
         if(isFunction(module.onClosed)) {
-            module.onClosed(module);
+            module.onClosed({
+                module,
+                godInfo,
+                getCurrentViewModel,
+                checkCurrentViewModel
+            });
         }
 
         if(Array.isArray(module.properties)) {
@@ -209,10 +212,18 @@ function initModules(godMenuPanel, godDetailPanel) {
             });
         }
     });
-
     onOpend(module => {
         if(isFunction(module.onOpend)) {
-            module.onOpend(module);
+            module.onOpend({
+                module,
+                godInfo,
+                callAction: actionName => {
+                    let buttonInfo = module.button.find(b => b.actionName === actionName);
+                    callAction(buttonInfo, module, elem);
+                },
+                getCurrentViewModel,
+                checkCurrentViewModel
+            });
         }
     });
 
