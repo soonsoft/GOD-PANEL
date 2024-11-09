@@ -74,7 +74,7 @@
         modules: [
             {
                 menuText: "常规表单系统",
-                icon: defaultIcon,
+                icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI1NDQwIj48cGF0aCBkPSJNODg4LjgzMiAwSDEzNS4xNjhjLTMyLjI1NiAwLTU4Ljg4IDI2LjExMi01OC44OCA1OC44OHY5MDYuMjRjMCAzMi4yNTYgMjYuMTEyIDU4Ljg4IDU4Ljg4IDU4Ljg4aDc1My4xNTJjMzIuMjU2IDAgNTguODgtMjYuMTEyIDU4Ljg4LTU4Ljg4di05MDYuMjRjMC41MTItMzIuNzY4LTI2LjExMi01OC44OC01OC4zNjgtNTguODh6IG0tMTY0Ljg2NCAxNzYuNjRjMzAuNzIgMCA1NS44MDggMjUuMDg4IDU1LjgwOCA1NS44MDhzLTI1LjA4OCA1NS44MDgtNTUuODA4IDU1LjgwOC01NS44MDgtMjUuMDg4LTU1LjgwOC01NS44MDggMjQuNTc2LTU1LjgwOCA1NS44MDgtNTUuODA4eiBtLTIxMS45NjggMGMzMC43MiAwIDU1LjgwOCAyNS4wODggNTUuODA4IDU1LjgwOFM1NDIuNzIgMjg4LjI1NiA1MTIgMjg4LjI1NnMtNTUuODA4LTI1LjA4OC01NS44MDgtNTUuODA4UzQ4MS4yOCAxNzYuNjQgNTEyIDE3Ni42NHogbS0yMTEuOTY4IDBjMzAuNzIgMCA1NS44MDggMjUuMDg4IDU1LjgwOCA1NS44MDhzLTI1LjA4OCA1NS44MDgtNTUuODA4IDU1LjgwOC01NS44MDgtMjUuMDg4LTU1LjgwOC01NS44MDggMjUuMDg4LTU1LjgwOCA1NS44MDgtNTUuODA4eiBtMjA4Ljg5NiA2MDYuMjA4SDI4NS4xODRjLTI0LjU3NiAwLTQ0LjAzMi0xOS45NjgtNDQuMDMyLTQ0LjAzMiAwLTI0LjU3NiAxOS45NjgtNDQuMDMyIDQ0LjAzMi00NC4wMzJoMjIzLjc0NGMyNC41NzYgMCA0NC4wMzIgMTkuOTY4IDQ0LjAzMiA0NC4wMzIgMCAyNC4wNjQtMTkuNDU2IDQ0LjAzMi00NC4wMzIgNDQuMDMyeiBtMjI5Ljg4OC0yMTEuOTY4SDI4NS4xODRjLTI0LjU3NiAwLTQ0LjAzMi0xOS45NjgtNDQuMDMyLTQ0LjAzMiAwLTI0LjU3NiAxOS45NjgtNDQuMDMyIDQ0LjAzMi00NC4wMzJoNDUzLjEyYzI0LjU3NiAwIDQ0LjAzMiAxOS45NjggNDQuMDMyIDQ0LjAzMiAwLjUxMiAyNC4wNjQtMTkuNDU2IDQ0LjAzMi00My41MiA0NC4wMzJ6IiBmaWxsPSIjMDQwMDAwIiBwLWlkPSI1NDQxIj48L3BhdGg+PC9zdmc+",
                 properties: [
                     { id: "text1", type: "string", label: "文本框", value: "" },
                     { id: "text2", type: "string", label: "必输项", value: "", required: true },
@@ -177,7 +177,7 @@
             },
             {
                 menuText: "Loading 效果展示",
-                icon: defaultIcon,
+                icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI2Mzc3Ij48cGF0aCBkPSJNMzg0IDEyOEE2NCA2NCAxMzY4MCAxIDAgNjQwIDEyOCA2NCA2NCAxMzY4MCAxIDAgMzg0IDEyOHpNNjU1LjUzIDI0MC40N0E2NCA2NCAxMzY4MCAxIDAgOTExLjUzIDI0MC40NyA2NCA2NCAxMzY4MCAxIDAgNjU1LjUzIDI0MC40N3pNODMyIDUxMkEzMiAzMiAxMzY4MCAxIDAgOTYwIDUxMiAzMiAzMiAxMzY4MCAxIDAgODMyIDUxMnpNNzE5LjUzIDc4My41M0EzMiAzMiAxMzY4MCAxIDAgODQ3LjUzIDc4My41MyAzMiAzMiAxMzY4MCAxIDAgNzE5LjUzIDc4My41M3pNNDQ4LjAwMiA4OTZBMzIgMzIgMTM2ODAgMSAwIDU3Ni4wMDIgODk2IDMyIDMyIDEzNjgwIDEgMCA0NDguMDAyIDg5NnpNMTc2LjQ3MiA3ODMuNTNBMzIgMzIgMTM2ODAgMSAwIDMwNC40NzIgNzgzLjUzIDMyIDMyIDEzNjgwIDEgMCAxNzYuNDcyIDc4My41M3pNMTQ0LjQ3MiAyNDAuNDdBNDggNDggMTM2ODAgMSAwIDMzNi40NzIgMjQwLjQ3IDQ4IDQ4IDEzNjgwIDEgMCAxNDQuNDcyIDI0MC40N3pNNTYgNTEyQTM2IDM2IDEzNjgwIDEgMCAyMDAgNTEyIDM2IDM2IDEzNjgwIDEgMCA1NiA1MTJ6IiBmaWxsPSIjMDAwMDAwIiBwLWlkPSI2Mzc4Ij48L3BhdGg+PC9zdmc+",
                 description: "用于展示 Loading 动画效果。开启后，请切换菜单选项关闭。",
                 properties: [
                     { id: "gid", type: "string", label: "集团号", value: "" }
@@ -193,7 +193,7 @@
             },
             {
                 menuText: "显示结果集",
-                icon: defaultIcon,
+                icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI3NDkyIj48cGF0aCBkPSJNMTI4IDExNy4zMzMzMzNBOTYgOTYgMCAwIDAgMzIgMjEzLjMzMzMzM3Y1OTcuMzMzMzM0QTk2IDk2IDAgMCAwIDEyOCA5MDYuNjY2NjY3aDc2OEE5NiA5NiAwIDAgMCA5OTIgODEwLjY2NjY2N1YyMTMuMzMzMzMzQTk2IDk2IDAgMCAwIDg5NiAxMTcuMzMzMzMzSDEyOHogbTEwLjY2NjY2NyAyMzQuNjY2NjY3di0xMjhoNzQ2LjY2NjY2NnYxMjhIMTM4LjY2NjY2N3ogbTAgMjEzLjMzMzMzM3YtMTA2LjY2NjY2NmgxNzAuNjY2NjY2djEwNi42NjY2NjZoLTE3MC42NjY2NjZ6IG0yNzcuMzMzMzMzIDB2LTEwNi42NjY2NjZoMTkydjEwNi42NjY2NjZoLTE5MnogbTI5OC42NjY2NjcgMHYtMTA2LjY2NjY2NmgxNzAuNjY2NjY2djEwNi42NjY2NjZoLTE3MC42NjY2NjZ6IG0tNTc2IDIzNC42NjY2Njd2LTEyOGgxNzAuNjY2NjY2djEyOGgtMTcwLjY2NjY2NnogbTI3Ny4zMzMzMzMgMHYtMTI4aDE5MnYxMjhoLTE5MnogbTI5OC42NjY2NjcgMHYtMTI4aDE3MC42NjY2NjZ2MTI4aC0xNzAuNjY2NjY2eiIgZmlsbD0iIzAwMDAwMCIgcC1pZD0iNzQ5MyI+PC9wYXRoPjwvc3ZnPg==",
                 properties: [
                     { 
                         id: "viewMode", 
@@ -2321,14 +2321,17 @@
 
         if(godPanel && godHandle) {
             // transitionend, transitionstart, transitioncancel
+            on(godPanel, "transitionstart", event => {
+                if(!godPanel.classList.contains("god-panel-show")) {
+                    if(godInfo.app) {
+                        godInfo.app.style.display = appDisplayValue;
+                    }
+                }
+            });
             on(godPanel, "transitionend", event => {
                 if(godPanel.classList.contains("god-panel-show")) {
                     if(godInfo.app) {
                         godInfo.app.style.display = "none";
-                    }
-                } else {
-                    if(godInfo.app) {
-                        godInfo.app.style.display = appDisplayValue;
                     }
                 }
             });

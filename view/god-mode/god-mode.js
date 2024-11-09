@@ -66,14 +66,17 @@ function insertGodPanel() {
 
     if(godPanel && godHandle) {
         // transitionend, transitionstart, transitioncancel
+        on(godPanel, "transitionstart", event => {
+            if(!godPanel.classList.contains("god-panel-show")) {
+                if(godInfo.app) {
+                    godInfo.app.style.display = appDisplayValue;
+                }
+            }
+        });
         on(godPanel, "transitionend", event => {
             if(godPanel.classList.contains("god-panel-show")) {
                 if(godInfo.app) {
                     godInfo.app.style.display = "none";
-                }
-            } else {
-                if(godInfo.app) {
-                    godInfo.app.style.display = appDisplayValue;
                 }
             }
         });
