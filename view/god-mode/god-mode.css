@@ -488,7 +488,7 @@ div.god-panel-show {
     border-radius: 4px;
     margin: 0;
     padding: 0;
-    vertical-align: middle;
+    vertical-align: top;
     background-color: var(--basic-bg-color);
     outline: none;
     -webkit-appearance: none;
@@ -503,9 +503,17 @@ div.god-panel-show {
 }
 
 #godPanel #godDetailPanel .checkbox-text {
-    margin-left: 5px;
-    line-height: 32px;
+    line-height: 1.2em;
     font-size: 14px;
+}
+
+#godPanel #godDetailPanel div.checkbox-panel {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    grid-gap: 10px 10px;
+    align-items: start;
+    width: 100%;
+    height: auto;
 }
 
 #godPanel #godDetailPanel label.label-file {

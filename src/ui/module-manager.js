@@ -1,28 +1,28 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml } from "../../../src/common";
-import { formRender, buttonRender } from "../../../src/ui/panel-ui";
-import { addEventListener, dispatchEvent } from "../../../src/event";
-import { formModule } from "./form-module";
-import { loadingModule } from "./loading-module";
-import { renderModule } from "./render-module";
-import { aboutModule } from "./about-module";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml } from "../common";
+import { addEventListener, dispatchEvent } from "../event";
 
-const modules = [
-    formModule,
-    loadingModule,
-    renderModule,
-    aboutModule
-];
-
+let modules = [];
 let currentMenuId;
 let currentModuleDisabled = false;
+let depMap = null;
 
 function setModuleDisabled(value) {
     currentModuleDisabled = value;
 }
 
+function addDependency(propertyId, depInfo) {
+    if(!depMap) {
+        depMap = new Map();
+    }
+    depMap.set(propertyId, depInfo);
+}
+
 function getCurrentModule(id) {
     if(!id) {
         id = currentMenuId;
+    }
+    if(!id) {
+        return null;
     }
     let arr = id.split(":");
     let index = parseInt(arr[0], 10);
@@ -136,6 +136,10 @@ function closePage(moduleId) {
     }
 
     onClosed(moduleInfo);
+
+    // reset
+    currentMenuId = null;
+    depMap = null;
 }
 
 //#region events
@@ -170,7 +174,8 @@ function callAction(actionInfo, module, elem) {
     }
 }
 
-function initModules(godMenuPanel, godDetailPanel, godInfo) {
+function initModules(moduleList, godMenuPanel, godDetailPanel) {
+    modules = moduleList;
     function menuItemRender(menuItem, id, level) {
         let marginLeft = 8 + 40 * level;
         menuItem.id = id;
@@ -200,7 +205,6 @@ function initModules(godMenuPanel, godDetailPanel, godInfo) {
         if(isFunction(module.onClosed)) {
             module.onClosed({
                 module,
-                godInfo,
                 getCurrentViewModel,
                 checkCurrentViewModel
             });
@@ -216,7 +220,6 @@ function initModules(godMenuPanel, godDetailPanel, godInfo) {
         if(isFunction(module.onOpend)) {
             module.onOpend({
                 module,
-                godInfo,
                 callAction: actionName => {
                     let buttonInfo = module.button.find(b => b.actionName === actionName);
                     callAction(buttonInfo, module, elem);
@@ -347,9 +350,122 @@ function initModules(godMenuPanel, godDetailPanel, godInfo) {
     });
 }
 
+// 生成表单
+function formRender(properties) {
+    function insertStar(hasStar) {
+        return hasStar ? `<span class="required-star">*</span>` : "";
+    }
+
+    function selectRender(options, propertyInfo) {
+        let htmlBuilder = [];
+        htmlBuilder.push(`<option value="">请选择</option>`);
+        propertyInfo.value = "";
+        if(Array.isArray(options)) {
+            options.forEach(option => {
+                if(typeof option !== "object") {
+                    option = { value: option }
+                }
+                let value = option.value;
+                let text = option.text || value;
+                let selected = !!option.selected;
+                htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
+                if(selected) {
+                    propertyInfo.value = value;
+                }
+            });
+        }
+        return htmlBuilder.join("");
+    }
+
+    function checkboxRender(options, propertyInfo) {
+        let htmlBuilder = [];
+        if(Array.isArray(options)) {
+            const selectedValues = [];
+            options.forEach((option, idx) => {
+                let value = option.value;
+                let text = option.text || value;
+                let selected = !!option.selected;
+                htmlBuilder.push(`<input id="${propertyInfo.id}_${idx}" data-property-name="${propertyInfo.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
+                htmlBuilder.push(`<label for="${propertyInfo.id}_${idx}" class="checkbox-text">${text}</label>`);
+                if(selected) {
+                    selectedValues.push(value);
+                }
+            });
+            propertyInfo.value = selectedValues;
+        }
+        return htmlBuilder.join("");
+    }
+
+    let htmlBuilder = [];
+    htmlBuilder.push('<ul class="form-list">');
+    if(Array.isArray(properties)) {
+        properties.forEach((e, i) => {
+            let propertyInfo = e;
+            let value = propertyInfo.value || "";
+            htmlBuilder.push("<li>");
+            htmlBuilder.push(`<label class="label-text">${propertyInfo.label}</label>${insertStar(propertyInfo.required)}<br>`);
+            switch(propertyInfo.type) {
+                case "string":
+                    htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
+                    break;
+                case "text":
+                    htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}"></textarea>`);
+                    break;
+                case "select":
+                    htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
+                    htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
+                    htmlBuilder.push(`</select>`);
+                    break;
+                case "checkbox":
+                    htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
+                    htmlBuilder.push(checkboxRender(propertyInfo.options, propertyInfo));
+                    htmlBuilder.push("</div>");
+                    break;
+                case "file":
+                    htmlBuilder.splice(htmlBuilder.length - 1, 1, `
+                        <label class="label-file">
+                            <input id="${propertyInfo.id}" type="file" data-property-name="${propertyInfo.id}" value="">
+                            <span>${propertyInfo.label}</span>
+                        </label>
+                    `);
+                    break;
+                default:
+                    htmlBuilder.push(`<input id="${propertyInfo.id}" type="${propertyInfo.type}" data-property-name="${propertyInfo.id}" value="${value}"`);
+                    ["min", "max", "step"].forEach(attr => {
+                        if(!isEmpty(propertyInfo[attr])) {
+                            htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
+                        }
+                    });
+                    htmlBuilder.push(" />")
+                    break;
+            }
+            htmlBuilder.push("</li>");
+        });
+    }
+    htmlBuilder.push("</ul>");
+    return htmlBuilder.join("");
+}
+
+// 生成按钮
+function buttonRender(buttonList) {
+    let htmlBuilder = [];
+    if(Array.isArray(buttonList) && buttonList.length > 0) {
+        htmlBuilder.push('<section class="button-panel">');
+        buttonList.forEach((b, i) => {
+            if(isEmpty(b.text)) {
+                return;
+            }
+            htmlBuilder.push(`<button data-button-index="${i}">${b.text}</button>`);
+        });
+        htmlBuilder.push('</section>');
+    }
+    return htmlBuilder.join("");
+}
+
 export {
     setModuleDisabled,
     initModules,
     onOpend,
-    onClosed
+    onClosed,
+    addDependency
 };

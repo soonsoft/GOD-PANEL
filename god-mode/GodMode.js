@@ -103,7 +103,7 @@
                         options: [
                             { value: "json", text: "Json", selected: true },
                             { value: "txt", text: "文本" },
-                            { value: "exe", text: "可执行文件自定义表格自定义表格自定义表格自定义表格自定义表格" },
+                            { value: "exe", text: "可执行文件（通常是指 Microsoft Windows 操作系统中的 .exe 文件，双击后可以允许一个应用程序。）" },
                             { value: "app", text: "应用程序" },
                             { value: "mp3", text: "音频文件", selected: true },
                             { value: "mp4", text: "视频文件" }
@@ -158,7 +158,7 @@
                                     }
                                     let vm = ctx.getCurrentViewModel();
                                     let data = [
-                                        `<a href="javascript:void(0)" data-action="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
+                                        `<a href="javascript:void(0)" data-action-name="download" data-filename="${vm.fileName}">${vm.fileName}</a>`
                                     ];
                                     ctx.jsonRender(data);
                                 }
@@ -168,7 +168,8 @@
                                 action: ctx => {
                                     let elem = ctx.element;
                                     let fileName = elem.dataset.filename;
-                                    ctx.jsonRender(`${fileName} 下载完成`);
+                                    httpDownload("https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-09-12.jpg", fileName, "GET")
+                                        .catch(e => ctx.jsonRender(e));
                                 }
                             }
                         ]
@@ -560,6 +561,18 @@
         const options = {
             responseDataType: "file"
         };
+
+        if(arguments.length < 4 && typeof data === "string") {
+            let upCase = data.toUpperCase();
+            if(upCase === "GET" || upCase === "POST") {
+                method = upCase;
+            } else {
+                method = filename;
+                filename = data;
+            }
+            data = null;
+        }
+
         if(method === "GET") {
             resp = await httpGet(url, data, options);
         } else {
@@ -589,10 +602,6 @@
                 message: resp.text()
             }
         }
-    }
-
-    async function httpDownloadByGet(url, data, filename) {
-        return await httpDownload(url, data, filename, "GET");
     }
 
     async function httpGet(url, data, options) {
@@ -1081,68 +1090,84 @@
                 return hasStar ? `<span class="required-star">*</span>` : "";
             }
 
+            function selectRender(options, propertyInfo) {
+                let htmlBuilder = [];
+                htmlBuilder.push(`<option value="">请选择</option>`);
+                propertyInfo.value = "";
+                if(Array.isArray(options)) {
+                    options.forEach(option => {
+                        if(typeof option !== "object") {
+                            option = { value: option }
+                        }
+                        let value = option.value;
+                        let text = option.text || value;
+                        let selected = !!option.selected;
+                        htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
+                        if(selected) {
+                            propertyInfo.value = value;
+                        }
+                    });
+                }
+                return htmlBuilder.join("");
+            }
+        
+            function checkboxRender(options, propertyInfo) {
+                let htmlBuilder = [];
+                if(Array.isArray(options)) {
+                    const selectedValues = [];
+                    options.forEach((option, idx) => {
+                        let value = option.value;
+                        let text = option.text || value;
+                        let selected = !!option.selected;
+                        htmlBuilder.push(`<input id="${propertyInfo.id}_${idx}" data-property-name="${propertyInfo.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
+                        htmlBuilder.push(`<label for="${propertyInfo.id}_${idx}" class="checkbox-text">${text}</label>`);
+                        if(selected) {
+                            selectedValues.push(value);
+                        }
+                    });
+                    propertyInfo.value = selectedValues;
+                }
+                return htmlBuilder.join("");
+            }
+
             let htmlBuilder = [];
             htmlBuilder.push('<ul class="form-list">');
             if(Array.isArray(properties)) {
                 properties.forEach((e, i) => {
-                    let value = e.value || "";
+                    let propertyInfo = e;
+                    let value = propertyInfo.value || "";
                     htmlBuilder.push("<li>");
-                    htmlBuilder.push(`<label class="label-text">${e.label}</label>${insertStar(e.required)}<br>`);
-                    switch(e.type) {
+                    htmlBuilder.push(`<label class="label-text">${propertyInfo.label}</label>${insertStar(propertyInfo.required)}<br>`);
+                    switch(propertyInfo.type) {
                         case "string":
-                            htmlBuilder.push(`<input id="${e.id}" type="text" data-property-name="${e.id}" value="${value}" />`);
+                            htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
                             break;
                         case "text":
-                            htmlBuilder.push(`<textarea id="${e.id}" data-property-name="${e.id}"></textarea>`);
+                            htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}"></textarea>`);
                             break;
                         case "select":
-                            htmlBuilder.push(`<select id="${e.id}" data-property-name="${e.id}">`);
-                            htmlBuilder.push(`<option value="">请选择</option>`);
-                            if(Array.isArray(e.options)) {
-                                e.options.forEach(option => {
-                                    if(typeof option !== "object") {
-                                        option = { value: option }
-                                    }
-                                    let value = option.value;
-                                    let text = option.text || value;
-                                    let selected = !!option.selected;
-                                    htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
-                                    if(selected) {
-                                        e.value = value;
-                                    }
-                                });
-                            }
+                            htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
+                            htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
                             htmlBuilder.push(`</select>`);
                             break;
                         case "checkbox":
-                            if(Array.isArray(e.options)) {
-                                const selectedValues = [];
-                                e.options.forEach((option, idx) => {
-                                    let value = option.value;
-                                    let text = option.text || value;
-                                    let selected = !!option.selected;
-                                    htmlBuilder.push(`<input id="${e.id}_${idx}" data-property-name="${e.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
-                                    htmlBuilder.push(`<label for="${e.id}_${idx}" class="checkbox-text">${text}</label><br>`);
-                                    if(selected) {
-                                        selectedValues.push(value);
-                                    }
-                                });
-                                e.value = selectedValues;
-                            }
+                            htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
+                            htmlBuilder.push(checkboxRender(propertyInfo.options, propertyInfo));
+                            htmlBuilder.push("</div>");
                             break;
                         case "file":
                             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
                                 <label class="label-file">
-                                    <input id="${e.id}" type="file" data-property-name="${e.id}" value="">
-                                    <span>${e.label}</span>
+                                    <input id="${propertyInfo.id}" type="file" data-property-name="${propertyInfo.id}" value="">
+                                    <span>${propertyInfo.label}</span>
                                 </label>
                             `);
                             break;
                         default:
-                            htmlBuilder.push(`<input id="${e.id}" type="${e.type}" data-property-name="${e.id}" value="${value}"`);
+                            htmlBuilder.push(`<input id="${propertyInfo.id}" type="${propertyInfo.type}" data-property-name="${propertyInfo.id}" value="${value}"`);
                             ["min", "max", "step"].forEach(attr => {
-                                if(!isEmpty(e[attr])) {
-                                    htmlBuilder.push(` ${attr}="${e[attr]}"`);
+                                if(!isEmpty(propertyInfo[attr])) {
+                                    htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
                                 }
                             });
                             htmlBuilder.push(" />")
@@ -1984,9 +2009,17 @@
             }
 
             #godPanel #godDetailPanel .checkbox-text {
-                margin-left: 5px;
-                line-height: 32px;
+                line-height: 1.2em;
                 font-size: 14px;
+            }
+
+            #godPanel #godDetailPanel div.checkbox-panel {
+                display: grid;
+                grid-template-columns: 24px 1fr;
+                grid-gap: 10px 10px;
+                align-items: start;
+                width: 100%;
+                height: auto;
             }
 
             #godPanel #godDetailPanel label.label-file {

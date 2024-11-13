@@ -1,7 +1,9 @@
 import { saveAs } from "./common";
 import { hideLoading, showLoading } from "./ui/loading";
 
-const globalConfig = {};
+const globalConfig = {
+    credentials: "include"
+};
 
 function setGlobalConfig(config) {
     if(config) {
@@ -39,6 +41,17 @@ async function httpUpload(url, data) {
 
 async function httpDownload(url, data, filename, method) {
     let resp;
+    if(arguments.length < 4 && typeof data === "string") {
+        let upCase = data.toUpperCase();
+        if(upCase === "GET" || upCase === "POST") {
+            method = upCase;
+        } else {
+            method = filename;
+            filename = data;
+        }
+        data = null;
+    }
+
     const options = {
         responseDataType: "file"
     };
@@ -142,10 +155,7 @@ async function httpRequest(url, method, data, options) {
     let fetchInit = Object.assign({
         method: method,
         headers: initHeader()
-    }, options);
-    if(godInfo.http.carryCookie) {
-        fetchInit.credentials = "include";
-    }
+    }, options, globalConfig);
     fetchInit.body = initBody();
 
     let urlParams = data;

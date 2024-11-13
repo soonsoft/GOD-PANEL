@@ -1,10 +1,21 @@
 import "./god-mode.css";
 import { ready, appendHtml, on } from "../../src/common";
-import { initModules, onClosed, setModuleDisabled } from "./modules/module-manager";
+import { initModules, onClosed, setModuleDisabled } from "../../src/ui/module-manager";
 import { onLoadingHidden, onLoadingShown, initLoading, hideLoading } from "../../src/ui/loading";
+import { formModule } from "./modules/form-module";
+import { loadingModule } from "./modules/loading-module";
+import { renderModule } from "./modules/render-module";
+import { aboutModule } from "./modules/about-module";
+
+const moduleList = [
+    formModule,
+    loadingModule,
+    renderModule,
+    aboutModule
+];
 
 const godInfo = {
-    version: "1.0.7"
+    version: "1.0.0"
 };
 
 onClosed(() => hideLoading());
@@ -100,6 +111,6 @@ function loadingInitial() {
 ready(() => {
     insertGodPanel();
     loadingInitial();
-    initModules(godInfo.godMenuPanel, godInfo.godDetailPanel, godInfo);
+    initModules(moduleList, godInfo.godMenuPanel, godInfo.godDetailPanel);
 });
 
