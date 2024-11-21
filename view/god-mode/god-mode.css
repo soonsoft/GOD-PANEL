@@ -1,6 +1,7 @@
 :root {
-    --background-image: url(https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-06-21.jpg);
-    --primary-color: rgb(44, 108, 128);
+    /* --background-image: url(https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-06-21.jpg); */
+    --background-image: linear-gradient(200deg, rgb(0, 98, 255), rgb(66, 212, 241), rgb(250, 227, 129), rgb(205, 114, 3));
+    --primary-color: rgb(0, 98, 255);
     --font-color: #000000;
     --panel-color: rgba(255, 255, 255, .4);
     --panel-font-color: #000000;
@@ -191,6 +192,65 @@ div.god-panel-show {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+#godPanel > #godBackground .rectangle {
+    width: 100vh;
+    height: 100vh;
+    border-radius: 40%;
+}
+
+@keyframes element1 {
+    0% { transform: rotate(30deg) }
+    50% { transform: rotate(360deg) }
+    100% { transform: rotate(30deg) }
+}
+
+#godPanel > #godBackground .element1 {
+    background: linear-gradient(90deg, rgb(253, 115, 203), rgb(129, 165, 250));
+    width: 160vh;
+    height: 160vh;
+    top: -30vh;
+    left: -120vh;
+    position: absolute;
+    opacity: .7;
+    animation: element1 180s linear infinite;
+}
+
+@keyframes element2 {
+    0% { transform: rotate(60deg); }
+    50% { transform: rotate(360deg); }
+    100% { transform: rotate(60deg); }
+}
+
+#godPanel > #godBackground .element2 {
+    background: linear-gradient(180deg, rgb(248, 235, 194), rgb(129, 238, 250), rgb(129, 195, 252));
+    width: 220vh;
+    height: 220vh;
+    top: -60vh;
+    left: -160vh;
+    position: absolute;
+    opacity: .9;
+    animation: element2 200s linear infinite;
+}
+
+@keyframes element3 {
+    0% { transform: rotate(40deg);}
+    50% { transform: rotate(360deg); }
+    100% { transform: rotate(40deg);}
+}
+
+#godPanel > #godBackground .element3 {
+    background: linear-gradient(240deg, rgb(247, 155, 43), rgb(244, 195, 126));
+    width: 200vh;
+    height: 200vh;
+    top: -80vh;
+    right: -140vh;
+    position: absolute;
+    opacity: .8;
+    animation: element3 150s linear infinite;
+    
 }
 
 #godPanel > #godContentPanel {
@@ -747,4 +807,19 @@ div.god-panel-show {
 #godPanel #godDetailPanel .image-view {
     width: 100%;
     vertical-align: top;
+}
+
+#godPanel #godDetailPanel .card-view {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, 200px);
+    grid-gap: 10px 10px;
+}
+
+#godPanel #godDetailPanel .card-item {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: var(--basic-bg-color);
 }

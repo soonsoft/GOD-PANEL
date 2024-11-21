@@ -1,4 +1,4 @@
-import { jsonRender, imageRender, tableRender } from "../../../src/ui/panel-ui";
+import { jsonRender, imageRender, tableRender, cardRender } from "../../../src/ui/panel-ui";
 
 const renderModule = {
     menuText: "显示结果集",
@@ -9,12 +9,13 @@ const renderModule = {
             type: "select", 
             label: "请选择视图类型", 
             options: [
-                { value: "json", text: "Json", selected: true },
+                { value: "json", text: "Json" },
                 { value: "table", text: "表格" },
                 { value: "custom-table", text: "自定义表格" },
                 { value: "json-array", text: "Json Array" },
                 { value: "text", text: "文本" },
-                { value: "image", text: "图片" }
+                { value: "image", text: "图片" },
+                { value: "card", text: "卡片视图", selected: true }
             ]
         }
     ],
@@ -140,6 +141,10 @@ const renderModule = {
                             }
                         };
                         break;
+                    case "card":
+                        let arr = new Array(20);
+                        cardRender(arr);
+                        return;
                     default:
                         result = "显示文本信息";
                         break;

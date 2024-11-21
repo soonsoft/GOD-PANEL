@@ -28,7 +28,11 @@ function insertGodPanel() {
 
     const template = `
         <div id="godPanel" class="god-panel-default">
-            <div id="godBackground"></div>
+            <div id="godBackground">
+                <div class="rectangle element2"></div>
+                <div class="rectangle element1"></div>
+                <div class="rectangle element3"></div>
+            </div>
             <div id="godContentPanel">
                 <div id="godPanelHeader">
                     <button id="closeButton"></button>

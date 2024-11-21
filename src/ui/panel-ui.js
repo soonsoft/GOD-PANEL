@@ -9,7 +9,7 @@ function resultRender(html) {
     replaceHtml(resultPanel, html);
 }
 
-// Json 结果集展示
+// Json 视图
 function jsonRender(data, formatter) {
     if(data instanceof Error) {
         data = data.message;
@@ -155,7 +155,7 @@ function jsonRender(data, formatter) {
     resultRender(htmlBuilder.join(""));
 }
 
-// 表格展示
+// 表格视图·
 function tableRender(columns, data, renderFn) {
     if(arguments.length === 1) {
         data = columns;
@@ -279,7 +279,12 @@ function tableRender(columns, data, renderFn) {
     `);
 }
 
-// 图片展示
+/**
+ * 图片视图
+ * @param options = { type: "url" || "blob" || "arrayBuffer" || "base64" }
+ * @param arguments[0-1] ~ [n] , string || Blob || ArrayBuffer
+ * @returns 
+ */
 function imageRender() {
     if(arguments.length === 0) {
         return;
@@ -349,8 +354,43 @@ function imageRender() {
     afterTasks.forEach(fn => fn());
 }
 
+/**
+ * 卡片视图
+ * @param {*} data 数据集
+ * @param {*} options 填充方式，function || { width: <value>, height: <value>, formatter: <function> }
+ */
+function cardRender(data, options) {
+    let arr = data;
+    if(!Array.isArray(data) && !data) {
+        arr = [ data ] ;
+    }
+
+    if(!options) {
+        options = {};
+    }
+
+    let formatter = options.formatter || options;
+    formatter = isFunction(formatter) ? formatter : (item, i) => `<div>${i}</div>`;
+
+    let width = options.width || "200px";
+    let height = options.height || "200px";
+
+    let htmlBuilder = [];
+    htmlBuilder.push(`<div class="result-content-panel card-view" style="grid-template-columns: repeat(auto-fit, ${width})">`);
+    for(let i = 0; i < arr.length; i++) {
+        let item = arr[i];
+        htmlBuilder.push(`<div class="card-item" style="width:${width};height:${height}">`);
+        htmlBuilder.push(formatter(item, i));
+        htmlBuilder.push("</div>");
+    }
+    htmlBuilder.push("</div>");
+    
+    resultRender(htmlBuilder.join(""));
+}
+
 export {
     jsonRender,
     tableRender,
-    imageRender
+    imageRender,
+    cardRender
 };
