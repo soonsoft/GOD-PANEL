@@ -1801,6 +1801,7 @@
             #godPanel #godMenuPanel dt.menu-item-selected > b {
                 background-color: ${godInfo.theme.menuItemSelectedColor} !important;
                 opacity: 1;
+                box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .3);
             }
     
             #godPanel #godMenuPanel dt i {
