@@ -1,6 +1,7 @@
 import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
 
+let context;
 let modules = [];
 let currentMenuId;
 let currentModuleDisabled = false;
@@ -174,8 +175,11 @@ function callAction(actionInfo, module, elem) {
     }
 }
 
-function initModules(moduleList, godMenuPanel, godDetailPanel) {
+function initModules(moduleList, ctx) {
     modules = moduleList;
+    context = ctx;
+    let godMenuPanel = context.godMenuPanel;
+    let godDetailPanel = context.godDetailPanel;
     function menuItemRender(menuItem, id, level) {
         let marginLeft = 8 + 40 * level;
         menuItem.id = id;
@@ -220,6 +224,7 @@ function initModules(moduleList, godMenuPanel, godDetailPanel) {
         if(isFunction(module.onOpend)) {
             module.onOpend({
                 module,
+                godInfo: context,
                 callAction: actionName => {
                     let buttonInfo = module.button.find(b => b.actionName === actionName);
                     callAction(buttonInfo, module, elem);

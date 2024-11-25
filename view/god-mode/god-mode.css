@@ -254,10 +254,10 @@ div.god-panel-show {
 }
 
 #godPanel > #godContentPanel {
-    width: 96%;
-    height: 96%;
-    top: 2%;
-    left: 2%;
+    top: 2vh;
+    left: 2vh;
+    right: 2vh;
+    bottom: 2vh;
     position: absolute;
     background-color: var(--panel-color);
     backdrop-filter: blur(20px);

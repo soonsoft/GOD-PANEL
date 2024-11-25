@@ -115,6 +115,6 @@ function loadingInitial() {
 ready(() => {
     insertGodPanel();
     loadingInitial();
-    initModules(moduleList, godInfo.godMenuPanel, godInfo.godDetailPanel);
+    initModules(moduleList, godInfo);
 });
 
