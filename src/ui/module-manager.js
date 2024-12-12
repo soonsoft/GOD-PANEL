@@ -1,5 +1,6 @@
 import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
+import { propertyRender } from "./panel-ui"
 
 let context;
 let modules = [];
@@ -357,93 +358,12 @@ function initModules(moduleList, ctx) {
 
 // 生成表单
 function formRender(properties) {
-    function insertStar(hasStar) {
-        return hasStar ? `<span class="required-star">*</span>` : "";
-    }
-
-    function selectRender(options, propertyInfo) {
-        let htmlBuilder = [];
-        htmlBuilder.push(`<option value="">请选择</option>`);
-        propertyInfo.value = "";
-        if(Array.isArray(options)) {
-            options.forEach(option => {
-                if(typeof option !== "object") {
-                    option = { value: option }
-                }
-                let value = option.value;
-                let text = option.text || value;
-                let selected = !!option.selected;
-                htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
-                if(selected) {
-                    propertyInfo.value = value;
-                }
-            });
-        }
-        return htmlBuilder.join("");
-    }
-
-    function checkboxRender(options, propertyInfo) {
-        let htmlBuilder = [];
-        if(Array.isArray(options)) {
-            const selectedValues = [];
-            options.forEach((option, idx) => {
-                let value = option.value;
-                let text = option.text || value;
-                let selected = !!option.selected;
-                htmlBuilder.push(`<input id="${propertyInfo.id}_${idx}" data-property-name="${propertyInfo.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
-                htmlBuilder.push(`<label for="${propertyInfo.id}_${idx}" class="checkbox-text">${text}</label>`);
-                if(selected) {
-                    selectedValues.push(value);
-                }
-            });
-            propertyInfo.value = selectedValues;
-        }
-        return htmlBuilder.join("");
-    }
-
     let htmlBuilder = [];
     htmlBuilder.push('<ul class="form-list">');
     if(Array.isArray(properties)) {
-        properties.forEach((e, i) => {
-            let propertyInfo = e;
-            let value = propertyInfo.value || "";
+        properties.forEach((p, i) => {
             htmlBuilder.push("<li>");
-            htmlBuilder.push(`<label class="label-text">${propertyInfo.label}</label>${insertStar(propertyInfo.required)}<br>`);
-            switch(propertyInfo.type) {
-                case "string":
-                    htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
-                    break;
-                case "text":
-                    htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">${value}</textarea>`);
-                    break;
-                case "select":
-                    htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
-                    htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
-                    htmlBuilder.push(`</select>`);
-                    break;
-                case "checkbox":
-                    htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
-                    htmlBuilder.push(checkboxRender(propertyInfo.options, propertyInfo));
-                    htmlBuilder.push("</div>");
-                    break;
-                case "file":
-                    htmlBuilder.splice(htmlBuilder.length - 1, 1, `
-                        <label class="label-file">
-                            <input id="${propertyInfo.id}" type="file" data-property-name="${propertyInfo.id}" value="">
-                            <span>${propertyInfo.label}</span>
-                        </label>
-                    `);
-                    break;
-                default:
-                    htmlBuilder.push(`<input id="${propertyInfo.id}" type="${propertyInfo.type}" data-property-name="${propertyInfo.id}" value="${value}"`);
-                    ["min", "max", "step"].forEach(attr => {
-                        if(!isEmpty(propertyInfo[attr])) {
-                            htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
-                        }
-                    });
-                    htmlBuilder.push(" />")
-                    break;
-            }
+            htmlBuilder.push(propertyRender(p));
             htmlBuilder.push("</li>");
         });
     }

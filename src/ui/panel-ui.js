@@ -9,7 +9,11 @@ function resultRender(html) {
     replaceHtml(resultPanel, html);
 }
 
-// Json 视图
+/**
+ * JSON 视图
+ * @param {*} data 
+ * @param {*} formatter 
+ */
 function jsonRender(data, formatter) {
     if(data instanceof Error) {
         data = data.message;
@@ -155,7 +159,12 @@ function jsonRender(data, formatter) {
     resultRender(htmlBuilder.join(""));
 }
 
-// 表格视图·
+/**
+ * 表格视图
+ * @param {*} columns 
+ * @param {*} data 
+ * @param {*} renderFn 
+ */
 function tableRender(columns, data, renderFn) {
     if(arguments.length === 1) {
         data = columns;
@@ -388,9 +397,109 @@ function cardRender(data, options) {
     resultRender(htmlBuilder.join(""));
 }
 
+/**
+ * 将属性对应生成为组件
+ * @param {*} prototypeInfo 
+ */
+function propertyRender(prototypeInfo) {
+    function insertStar(hasStar) {
+        return hasStar ? `<span class="required-star">*</span>` : "";
+    }
+
+    function selectRender(options, propertyInfo) {
+        let htmlBuilder = [];
+        htmlBuilder.push(`<option value="">请选择</option>`);
+        propertyInfo.value = "";
+        if(Array.isArray(options)) {
+            options.forEach(option => {
+                if(typeof option !== "object") {
+                    option = { value: option }
+                }
+                let value = option.value;
+                let text = option.text || value;
+                let selected = !!option.selected;
+                htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
+                if(selected) {
+                    propertyInfo.value = value;
+                }
+            });
+        }
+        return htmlBuilder.join("");
+    }
+
+    function checkboxRender(options, propertyInfo) {
+        let htmlBuilder = [];
+        if(Array.isArray(options)) {
+            const selectedValues = [];
+            options.forEach((option, idx) => {
+                let value = option.value;
+                let text = option.text || value;
+                let selected = !!option.selected;
+                htmlBuilder.push(`<input id="${propertyInfo.id}_${idx}" data-property-name="${propertyInfo.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
+                htmlBuilder.push(`<label for="${propertyInfo.id}_${idx}" class="checkbox-text">${text}</label>`);
+                if(selected) {
+                    selectedValues.push(value);
+                }
+            });
+            propertyInfo.value = selectedValues;
+        }
+        return htmlBuilder.join("");
+    }
+
+    if(isEmpty(prototypeInfo.type)) {
+        return "";
+    }
+
+    let htmlBuilder = [];
+    let value = propertyInfo.value || "";
+    htmlBuilder.push(`<label class="label-text">${propertyInfo.label || prototypeInfo.id}</label>${insertStar(propertyInfo.required)}<br>`);
+    switch(propertyInfo.type) {
+        case "string":
+            htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
+            break;
+        case "text":
+            htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">${value}</textarea>`);
+            break;
+        case "select":
+            htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
+            htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
+            htmlBuilder.push(`</select>`);
+            break;
+        case "checkbox":
+            htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
+            htmlBuilder.push(checkboxRender(propertyInfo.options, propertyInfo));
+            htmlBuilder.push("</div>");
+            break;
+        case "file":
+            htmlBuilder.splice(htmlBuilder.length - 1, 1, `
+                <label class="label-file">
+                    <input id="${propertyInfo.id}" type="file" data-property-name="${propertyInfo.id}" value="">
+                    <span>${propertyInfo.label}</span>
+                </label>
+            `);
+            break;
+        case "hidden":
+            htmlBuilder.splice(htmlBuilder.length - 1, 1, `
+                <input id="${propertyInfo.id}" type="hidden" data-property-name="${propertyInfo.id}" value="${value}" />
+            `);
+            break;
+        default:
+            htmlBuilder.push(`<input id="${propertyInfo.id}" type="${propertyInfo.type}" data-property-name="${propertyInfo.id}" value="${value}"`);
+            ["min", "max", "step"].forEach(attr => {
+                if(!isEmpty(propertyInfo[attr])) {
+                    htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
+                }
+            });
+            htmlBuilder.push(" />")
+            break;
+    }
+    return htmlBuilder.join();
+}
+
 export {
     jsonRender,
     tableRender,
     imageRender,
-    cardRender
+    cardRender,
+    propertyRender
 };
