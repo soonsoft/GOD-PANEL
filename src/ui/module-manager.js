@@ -414,7 +414,7 @@ function formRender(properties) {
                     htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
                     break;
                 case "text":
-                    htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}"></textarea>`);
+                    htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">${value}</textarea>`);
                     break;
                 case "select":
                     htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
