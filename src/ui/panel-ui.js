@@ -399,9 +399,9 @@ function cardRender(data, options) {
 
 /**
  * 将属性对应生成为组件
- * @param {*} prototypeInfo 
+ * @param {*} propertyInfo 属性信息
  */
-function propertyRender(prototypeInfo) {
+function propertyRender(propertyInfo) {
     function insertStar(hasStar) {
         return hasStar ? `<span class="required-star">*</span>` : "";
     }
@@ -446,13 +446,13 @@ function propertyRender(prototypeInfo) {
         return htmlBuilder.join("");
     }
 
-    if(isEmpty(prototypeInfo.type)) {
+    if(isEmpty(propertyInfo.type)) {
         return "";
     }
 
     let htmlBuilder = [];
     let value = propertyInfo.value || "";
-    htmlBuilder.push(`<label class="label-text">${propertyInfo.label || prototypeInfo.id}</label>${insertStar(propertyInfo.required)}<br>`);
+    htmlBuilder.push(`<label class="label-text">${propertyInfo.label || propertyInfo.id}</label>${insertStar(propertyInfo.required)}<br>`);
     switch(propertyInfo.type) {
         case "string":
             htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
@@ -493,7 +493,7 @@ function propertyRender(prototypeInfo) {
             htmlBuilder.push(" />")
             break;
     }
-    return htmlBuilder.join();
+    return htmlBuilder.join("");
 }
 
 export {
