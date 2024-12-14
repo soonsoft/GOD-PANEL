@@ -411,18 +411,40 @@ function propertyRender(propertyInfo) {
         htmlBuilder.push(`<option value="">请选择</option>`);
         propertyInfo.value = "";
         if(Array.isArray(options)) {
+            let optionGroup = {};
             options.forEach(option => {
-                if(typeof option !== "object") {
-                    option = { value: option }
+                let group = option.group || "NONE";
+                let groupItem = optionGroup[group];
+                if(!groupItem) {
+                    groupItem = {
+                        label: group,
+                        optons: []
+                    };
+                    optionGroup[group] = groupItem;
                 }
-                let value = option.value;
-                let text = option.text || value;
-                let selected = !!option.selected;
-                htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
-                if(selected) {
-                    propertyInfo.value = value;
-                }
+                groupItem.options.push(option);
             });
+            for(let groupItem of optionGroup) {
+                const isGroup = groupItem.label !== "NONE";
+                if(isGroup) {
+                    htmlBuilder.push(`<optgroup label=${groupItem.label}>`);
+                }
+                groupItem.options.orEach(option => {
+                    if(typeof option !== "object") {
+                        option = { value: option }
+                    }
+                    let value = option.value;
+                    let text = option.text || value;
+                    let selected = !!option.selected;
+                    htmlBuilder.push(`<option value="${value}" ${selected ? "selected" : ""}>${text}</option>`);
+                    if(selected) {
+                        propertyInfo.value = value;
+                    }
+                });
+                if(isGroup) {
+                    htmlBuilder.push(`</optgroup>`);
+                }
+            }
         }
         return htmlBuilder.join("");
     }
