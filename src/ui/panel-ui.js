@@ -418,18 +418,19 @@ function propertyRender(propertyInfo) {
                 if(!groupItem) {
                     groupItem = {
                         label: group,
-                        optons: []
+                        options: []
                     };
                     optionGroup[group] = groupItem;
                 }
                 groupItem.options.push(option);
             });
-            for(let groupItem of optionGroup) {
+            Object.keys(optionGroup).forEach(key => {
+                let groupItem = optionGroup[key];
                 const isGroup = groupItem.label !== "NONE";
                 if(isGroup) {
                     htmlBuilder.push(`<optgroup label=${groupItem.label}>`);
                 }
-                groupItem.options.orEach(option => {
+                groupItem.options.forEach(option => {
                     if(typeof option !== "object") {
                         option = { value: option }
                     }
@@ -444,26 +445,31 @@ function propertyRender(propertyInfo) {
                 if(isGroup) {
                     htmlBuilder.push(`</optgroup>`);
                 }
-            }
+            });
         }
         return htmlBuilder.join("");
     }
 
-    function checkboxRender(options, propertyInfo) {
+    function groupItemRender(options, propertyInfo, type) {
         let htmlBuilder = [];
         if(Array.isArray(options)) {
-            const selectedValues = [];
+            let selectedValue = type === "checkbox" ? [] : "";
             options.forEach((option, idx) => {
+                let id = `${propertyInfo.id}_${idx}`;
                 let value = option.value;
                 let text = option.text || value;
                 let selected = !!option.selected;
-                htmlBuilder.push(`<input id="${propertyInfo.id}_${idx}" data-property-name="${propertyInfo.id}" type="checkbox" value="${value}" ${selected ? "checked" : ""}>`);
-                htmlBuilder.push(`<label for="${propertyInfo.id}_${idx}" class="checkbox-text">${text}</label>`);
+                htmlBuilder.push(`<input id="${id}" data-property-name="${propertyInfo.id}" type="${type}" ${htmlCondition(type === 'radio', propertyInfo.id, html`name="${0}"`)} value="${value}" ${selected ? "checked" : ""}>`);
+                htmlBuilder.push(`<label for="${id}" class="checkbox-text">${text}</label>`);
                 if(selected) {
-                    selectedValues.push(value);
+                    if(type === "checkbox") {
+                        selectedValue.push(value);
+                    } else {
+                        selectedValue = value;
+                    }
                 }
             });
-            propertyInfo.value = selectedValues;
+            propertyInfo.value = selectedValue;
         }
         return htmlBuilder.join("");
     }
@@ -488,8 +494,9 @@ function propertyRender(propertyInfo) {
             htmlBuilder.push(`</select>`);
             break;
         case "checkbox":
+        case "radio":
             htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
-            htmlBuilder.push(checkboxRender(propertyInfo.options, propertyInfo));
+            htmlBuilder.push(groupItemRender(propertyInfo.options, propertyInfo, propertyInfo.type));
             htmlBuilder.push("</div>");
             break;
         case "file":

@@ -26,6 +26,30 @@ const formModule = {
             ]
         },
         { 
+            id: "groupSelect1", 
+            type: "select", 
+            label: "分组下拉选项", 
+            options: [
+                { value: "option1"},
+                { value: "option2", group: "group1" },
+                { value: "option3", group: "group1" },
+                { value: "option4", group: "group2" },
+                { value: "option5", group: "group3" },
+                { value: "option6", group: "group4" },
+                { value: "option7", group: "group5" },
+                { value: "option8", selected: true }
+            ]
+        },
+        { 
+            id: "radio1", 
+            type: "radio", 
+            label: "请选择", 
+            options: [
+                { value: "continue", text: "继续", selected: true },
+                { value: "break", text: "中断" }
+            ]
+        },
+        { 
             id: "checkbox1", 
             type: "checkbox", 
             label: "选择文件类型", 

@@ -563,6 +563,26 @@ div.god-panel-show {
     background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJ3aWR0aDogMTJweDsgaGVpZ2h0OiAxMnB4OyIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCIgdmVyc2lvbj0iMS4xIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNIDk1NC44NTcgMzIzLjQyOSBxIDAgMjIuODU3MSAtMTYgMzguODU3MSBsIC00MTMuNzE0IDQxMy43MTQgbCAtNzcuNzE0MyA3Ny43MTQzIHEgLTE2IDE2IC0zOC44NTcxIDE2IHQgLTM4Ljg1NzEgLTE2IGwgLTc3LjcxNDMgLTc3LjcxNDMgbCAtMjA2Ljg1NyAtMjA2Ljg1NyBxIC0xNiAtMTYgLTE2IC0zOC44NTcxIHQgMTYgLTM4Ljg1NzEgbCA3Ny43MTQzIC03Ny43MTQzIHEgMTYgLTE2IDM4Ljg1NzEgLTE2IHQgMzguODU3MSAxNiBsIDE2OCAxNjguNTcxIGwgMzc0Ljg1NyAtMzc1LjQyOSBxIDE2IC0xNiAzOC44NTcxIC0xNiB0IDM4Ljg1NzEgMTYgbCA3Ny43MTQzIDc3LjcxNDMgcSAxNiAxNiAxNiAzOC44NTcxIFoiIHAtaWQ9IjU3MjAiIC8+PC9zdmc+");
 }
 
+#godPanel #godDetailPanel input[type=radio] {
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+    border: solid 1px #666;
+    border-radius: 50%;
+    margin: 0;
+    padding: 3px;
+    vertical-align: top;
+    background-color: transparent;
+    outline: none;
+    background-clip: content-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+#godPanel #godDetailPanel input[type=radio]:checked {
+    background-color: var(--primary-color);
+}
+
 #godPanel #godDetailPanel .checkbox-text {
     line-height: 1.2em;
     font-size: 14px;
