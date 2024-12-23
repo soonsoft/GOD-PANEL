@@ -100,14 +100,14 @@ function openPage(moduleId) {
     if(!moduleInfo) {
         return;
     }
-
+    let bodyLayout = isEmpty(moduleInfo.layout) ? "left-right" : moduleInfo.layout;
     let elem = `
         <div id="detailContentPanel" class="content-panel content-panel-actived">
             <section class="title-panel">
                 <h1>${moduleInfo.menuText}</h1>
                 ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
             </section>
-            <section class="body-panel">
+            <section class="body-panel ${bodyLayout}">
                 ${htmlCondition(Array.isArray(moduleInfo.properties) && moduleInfo.properties.length > 0, formRender(moduleInfo.properties), html`<section class="form-panel">${0}</section>`)}
                 <section class="result-panel"></section>
             </section>
@@ -375,16 +375,20 @@ function formRender(properties) {
 function buttonRender(buttonList) {
     let htmlBuilder = [];
     if(Array.isArray(buttonList) && buttonList.length > 0) {
-        htmlBuilder.push('<section class="button-panel">');
-        buttonList.forEach((b, i) => {
+        showButtons.forEach((b, i) => {
             if(isEmpty(b.text)) {
                 return;
             }
             htmlBuilder.push(`<button data-button-index="${i}">${b.text}</button>`);
         });
-        htmlBuilder.push('</section>');
+
+        return `
+            <section class="button-panel">
+                ${htmlBuilder.join("")}
+            </section>
+        `;
     }
-    return htmlBuilder.join("");
+    return "";
 }
 
 export {

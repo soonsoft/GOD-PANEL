@@ -640,21 +640,41 @@ div.god-panel-show {
 
 #godPanel #godDetailPanel section.form-panel {
     flex: 0 0 auto;
-    width: 300px;
-    height: 100%;
     display: flex;
-    flex-direction: column;
     justify-content: flex-start;
     align-items: center;
-    border-right: solid 1px var(--primary-color);
     overflow: auto;
 }
 
+#godPanel #godDetailPanel section.left-right {
+    flex-direction: row;
+}
+
+#godPanel #godDetailPanel section.left-right .form-panel {
+    flex-direction: column;
+    width: 300px;
+    height: 100%;
+    border-right: solid 1px var(--primary-color);
+}
+
+#godPanel #godDetailPanel section.top-bottom {
+    flex-direction: column;
+}
+
+#godPanel #godDetailPanel section.top-bottom .form-panel {
+    flex-direction: row;
+    width: 100%;
+    min-height: 48px;
+    border-bottom: solid 1px var(--primary-color);
+}
+
+/* 普通属性列表面板 */
 #godPanel #godDetailPanel .form-list {
-    width: 220px;
+    width: auto;
     height: auto;
     flex: none;
     min-height: 90%;
+    max-width: 220px;
     margin: 0;
     padding: 0;
 }
@@ -667,6 +687,38 @@ div.god-panel-show {
 
 #godPanel #godDetailPanel .form-list li:first-child {
     margin: 20px 0 10px 0;
+}
+
+/* 查询框面板 */
+#godPanel #godDetailPanel section.top-bottom .form-list {
+    display: flex;
+    flex-flow: row wrap;
+    min-height: 0;
+    max-width: 100%;
+    height: auto;
+    width: 100%;
+    padding: 0 0 20px 0;
+}
+
+#godPanel #godDetailPanel section.top-bottom .form-list li,
+#godPanel #godDetailPanel section.top-bottom .form-list li:first-child {
+    margin: 0 0 0 20px;
+    flex: none;
+    width: 220px;
+}
+
+/* 结果集面板 */
+#godPanel #godDetailPanel .result-panel .form-list {
+    max-width: calc(100% - 40px);
+    margin: auto;
+    display: grid;
+    grid-row-gap: 20px;
+    grid-column-gap: 20px;
+}
+
+#godPanel #godDetailPanel .result-panel .form-list li,
+#godPanel #godDetailPanel .result-panel .form-list li:first-child {
+    margin: 0;
 }
 
 #godPanel #godDetailPanel section.result-panel {
@@ -823,4 +875,36 @@ div.god-panel-show {
     border-radius: 10px;
     overflow: hidden;
     background-color: var(--basic-bg-color);
+}
+
+#godPanel #godDetailPanel .page-button-panel {
+    height: 48px;
+    width: auto;
+    max-width: 100%;
+    line-height: 48px;
+    border-radius: 24px;
+    background-color: var(--basic-bg-color);
+    margin:10px auto 10px auto;
+}
+
+#godPanel #godDetailPanel .page-button,
+#godPanel #godDetailPanel .page-button-selected,
+#godPanel #godDetailPanel .page-text {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    display: inline-block;
+    margin: 0 10px 0 10px;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+#godPanel #godDetailPanel .page-text {
+    color: var(--font-color);
+}
+
+#godPanel #godDetailPanel .page-button-selected {
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: var(--basic-bg-color);
 }

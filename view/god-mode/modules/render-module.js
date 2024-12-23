@@ -159,6 +159,14 @@ const renderModule = {
                 alert(elem.dataset.value);
             }
         }
+    ],
+    subModules: [
+        {
+            menuText: "分页视图"
+        },
+        {
+            menuText: "编辑视图"
+        }
     ]
 };
 
