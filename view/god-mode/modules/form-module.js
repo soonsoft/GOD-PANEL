@@ -10,6 +10,7 @@ const formModule = {
         { id: "textarea1", type: "text", label: "多行文本框", value: "" },
         { id: "number1", type: "number", label: "数字", step: 5 },
         { id: "date1", type: "date", label: "日期" },
+        { id: "color1", type: "color", label: "选取颜色" },
         { id: "range1", type: "range", label: "滑动条", min: 0, max: 100, value: 25 },
         { 
             id: "select1", 
@@ -23,6 +24,30 @@ const formModule = {
                 { value: "UK", text: "英国" },
                 { value: "RA", text: "俄罗斯" },
                 { value: "FR", text: "法国" }
+            ]
+        },
+        { 
+            id: "groupSelect1", 
+            type: "select", 
+            label: "分组下拉选项", 
+            options: [
+                { value: "option1"},
+                { value: "option2", group: "group1" },
+                { value: "option3", group: "group1" },
+                { value: "option4", group: "group2" },
+                { value: "option5", group: "group3" },
+                { value: "option6", group: "group4" },
+                { value: "option7", group: "group5" },
+                { value: "option8", selected: true }
+            ]
+        },
+        { 
+            id: "radio1", 
+            type: "radio", 
+            label: "请选择", 
+            options: [
+                { value: "continue", text: "继续", selected: true },
+                { value: "break", text: "中断" }
             ]
         },
         { 
