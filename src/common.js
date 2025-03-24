@@ -65,6 +65,26 @@ function isEmpty(val) {
     return type === "undefined" || (type === "string" && val.length === 0) || val === null;
 }
 
+// Todo test this function
+function base64Encode(str) {
+    if(isEmpty(str)) {
+        return "";
+    }
+    let encoder = new TextEncoder("utf-8");
+    let uint8array = encoder.encode(str);
+    return uint8array.toBase64();
+}
+
+// Todo test this function
+function base64Decode(str) {
+    if(isEmpty(str)) {
+        return "";
+    }
+    let decoder = new TextDecoder("utf-8");
+    let uint8array = Uint8Array.from(atob(str), c => c.charCodeAt(0));
+    return decoder.decode(uint8array);
+}
+
 function on(element, eventName, eventFn) {
     if(isFunction(eventName)) {
         eventFn = eventName;
@@ -91,6 +111,29 @@ function off(element, eventName, eventFn) {
         element = document;
     }
     element.removeEventListener(eventName, eventFn);
+}
+
+function onAnimationStart(element, eventFn, once) {
+    let listener = event => {
+        if(once) {
+            off(element, "animationstart", listener);
+        }
+        if(isFunction(eventFn)) {
+            eventFn(event);
+        }
+    };
+    on(element, "animationstart", listener);
+}
+function onAnimationEnd(element, eventFn, once) {
+    let listener = event => {
+        if(once) {
+            off(element, "animationend", listener);
+        }
+        if(isFunction(eventFn)) {
+            eventFn(event);
+        }
+    };
+    on(element, "animationend", listener);
 }
 
 function appendHtml(elem, html) {
@@ -205,6 +248,46 @@ function generateId() {
     return idValue;
 }
 
+function generateGUID() {
+    const cryptoObj = window.crypto || window.msCrypto;
+    const buffer = new Uint8Array(16);
+    cryptoObj.getRandomValues(buffer);
+
+    buffer[6] = (buffer[6] & 0x0f) | 0x40; // Version 4
+    buffer[8] = (buffer[8] & 0x3f) | 0x80; // Variant 10
+
+    const hex = Array.from(buffer, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function show(element) {
+    if(!element) {
+        return;
+    }
+    let displayValue = window.getComputedStyle(element).display;
+    if(displayValue !== "none") {
+        return;
+    }
+    displayValue = element.getAttribute("tmp_display");
+    if(displayValue) {
+        element.style.display = displayValue;
+    } else {
+        element.style.display = "block";
+    }
+}
+
+function hide(element) {
+    if(!element) {
+        return;
+    }
+    let displayValue = window.getComputedStyle(element).display;
+    if(displayValue === "none") {
+        return;
+    }
+    displayValue.setAttribute("tmp_display", displayValue);
+    element.style.display = "none";
+}
+
 function saveAs(blob, filename) {
     let alink = document.createElement("a");
     alink.style = "margin-left: -100px";
@@ -215,6 +298,45 @@ function saveAs(blob, filename) {
     document.body.removeChild(alink);
 }
 
+function convertDataAttr(str) {
+    if(isEmpty(str)) {
+        return "";
+    }
+
+    let parts = ["data"];
+    let startIndex = 0;
+    let strLength = str.length;
+    for(let i = 0; i < strLength; i++) {
+        let c = str.charAt(i);
+        if(c >= "A" && c <= "Z") {
+            if(i > startIndex) {
+                parts.push(str.substring(startIndex, i).toLowerCase());
+            }
+            startIndex = i;
+        }
+    }
+    if(startIndex < strLength) {
+        parts.push(str.substring(startIndex, strLength).toLowerCase());
+    }
+    return parts.join("-");
+}
+
+function splitText(str, split) {
+    if(isEmpty(str)) {
+        return [];
+    }
+    str += "";
+    let arr = str.split(split || ",");
+    let result = [];
+    arr.forEach(e => {
+        let val = e.trim();
+        if(val) {
+            result.push(val);
+        }
+    });
+    return result;
+}
+
 export {
     loadJS,
     ready,
@@ -223,6 +345,8 @@ export {
     isEmpty,
     on,
     off,
+    onAnimationStart,
+    onAnimationEnd,
     appendHtml,
     replaceHtml,
     html,
@@ -232,5 +356,9 @@ export {
     nextElement,
     nextTick,
     generateId,
-    saveAs
+    show,
+    hide,
+    saveAs,
+    convertDataAttr,
+    splitText
 };

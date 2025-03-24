@@ -1,15 +1,12 @@
-import { httpDownload } from "../../../src/http";
-
-const formModule = {
+godInfo.registerModule({
     menuText: "常规表单系统",
     icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI1NDQwIj48cGF0aCBkPSJNODg4LjgzMiAwSDEzNS4xNjhjLTMyLjI1NiAwLTU4Ljg4IDI2LjExMi01OC44OCA1OC44OHY5MDYuMjRjMCAzMi4yNTYgMjYuMTEyIDU4Ljg4IDU4Ljg4IDU4Ljg4aDc1My4xNTJjMzIuMjU2IDAgNTguODgtMjYuMTEyIDU4Ljg4LTU4Ljg4di05MDYuMjRjMC41MTItMzIuNzY4LTI2LjExMi01OC44OC01OC4zNjgtNTguODh6IG0tMTY0Ljg2NCAxNzYuNjRjMzAuNzIgMCA1NS44MDggMjUuMDg4IDU1LjgwOCA1NS44MDhzLTI1LjA4OCA1NS44MDgtNTUuODA4IDU1LjgwOC01NS44MDgtMjUuMDg4LTU1LjgwOC01NS44MDggMjQuNTc2LTU1LjgwOCA1NS44MDgtNTUuODA4eiBtLTIxMS45NjggMGMzMC43MiAwIDU1LjgwOCAyNS4wODggNTUuODA4IDU1LjgwOFM1NDIuNzIgMjg4LjI1NiA1MTIgMjg4LjI1NnMtNTUuODA4LTI1LjA4OC01NS44MDgtNTUuODA4UzQ4MS4yOCAxNzYuNjQgNTEyIDE3Ni42NHogbS0yMTEuOTY4IDBjMzAuNzIgMCA1NS44MDggMjUuMDg4IDU1LjgwOCA1NS44MDhzLTI1LjA4OCA1NS44MDgtNTUuODA4IDU1LjgwOC01NS44MDgtMjUuMDg4LTU1LjgwOC01NS44MDggMjUuMDg4LTU1LjgwOCA1NS44MDgtNTUuODA4eiBtMjA4Ljg5NiA2MDYuMjA4SDI4NS4xODRjLTI0LjU3NiAwLTQ0LjAzMi0xOS45NjgtNDQuMDMyLTQ0LjAzMiAwLTI0LjU3NiAxOS45NjgtNDQuMDMyIDQ0LjAzMi00NC4wMzJoMjIzLjc0NGMyNC41NzYgMCA0NC4wMzIgMTkuOTY4IDQ0LjAzMiA0NC4wMzIgMCAyNC4wNjQtMTkuNDU2IDQ0LjAzMi00NC4wMzIgNDQuMDMyeiBtMjI5Ljg4OC0yMTEuOTY4SDI4NS4xODRjLTI0LjU3NiAwLTQ0LjAzMi0xOS45NjgtNDQuMDMyLTQ0LjAzMiAwLTI0LjU3NiAxOS45NjgtNDQuMDMyIDQ0LjAzMi00NC4wMzJoNDUzLjEyYzI0LjU3NiAwIDQ0LjAzMiAxOS45NjggNDQuMDMyIDQ0LjAzMiAwLjUxMiAyNC4wNjQtMTkuNDU2IDQ0LjAzMi00My41MiA0NC4wMzJ6IiBmaWxsPSIjMDQwMDAwIiBwLWlkPSI1NDQxIj48L3BhdGg+PC9zdmc+",
     properties: [
         { id: "text1", type: "string", label: "文本框", value: "" },
         { id: "text2", type: "string", label: "必输项", value: "", required: true },
-        { id: "textarea1", type: "text", label: "多行文本框", value: "" },
+        { id: "textarea1", type: "text", label: "多行文本框", value: '{\n    "a": 1,\n    "b": 2,\n    "c": {\n        "c1": 1,\n        "c2": 2\n    }\n}' },
         { id: "number1", type: "number", label: "数字", step: 5 },
         { id: "date1", type: "date", label: "日期" },
-        { id: "color1", type: "color", label: "选取颜色" },
         { id: "range1", type: "range", label: "滑动条", min: 0, max: 100, value: 25 },
         { 
             id: "select1", 
@@ -26,30 +23,6 @@ const formModule = {
             ]
         },
         { 
-            id: "groupSelect1", 
-            type: "select", 
-            label: "分组下拉选项", 
-            options: [
-                { value: "option1"},
-                { value: "option2", group: "group1" },
-                { value: "option3", group: "group1" },
-                { value: "option4", group: "group2" },
-                { value: "option5", group: "group3" },
-                { value: "option6", group: "group4" },
-                { value: "option7", group: "group5" },
-                { value: "option8", selected: true }
-            ]
-        },
-        { 
-            id: "radio1", 
-            type: "radio", 
-            label: "请选择", 
-            options: [
-                { value: "continue", text: "继续", selected: true },
-                { value: "break", text: "中断" }
-            ]
-        },
-        { 
             id: "checkbox1", 
             type: "checkbox", 
             label: "选择文件类型", 
@@ -63,7 +36,7 @@ const formModule = {
             ]
         }
     ],
-    actions: [
+    button: [
         {
             text: "显示表单数据",
             action: ctx => {
@@ -78,6 +51,7 @@ const formModule = {
     subModules: [
         {
             menuText: "文件上传",
+            icon: defaultIcon,
             properties: [
                 { id: "fileName", type: "string", label: "模板文件名称（包含后缀）", required: true, value: "" },
                 { 
@@ -97,6 +71,7 @@ const formModule = {
         },
         {
             menuText: "文件下载",
+            icon: defaultIcon,
             properties: [
                 { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
             ],
@@ -126,8 +101,4 @@ const formModule = {
             ]
         }
     ]
-};
-
-export {
-    formModule
-}
+})

@@ -1,12 +1,18 @@
-import { generateId, html, htmlCondition, isEmpty, isFunction, replaceHtml } from "../common";
+import { generateId, html, htmlCondition, isEmpty, isFunction, convertDataAttr } from "../common";
+import { resultRender, createPropertyId } from "./module-scope";
 
-function resultRender(html) {
-    let resultPanel = godDetailPanel.querySelector(".result-panel");
-    if(!resultPanel) {
-        return;
+function createLinkButton(actionName, text, param) {
+    let scope = this.scope || 0;
+    let attrs = [`data-scope="${scope}"`];
+    if(!isEmpty(param)) {
+        Object.keys(param).forEach(key => {
+            let attrName = convertDataAttr(key);
+            let attrValue = param[key];
+            attrs.push(`${attrName}="${attrValue}"`);
+        });
     }
-
-    replaceHtml(resultPanel, html);
+    let dataAttrs = attrs.join(" ");
+    return `<a data-action-name="${actionName}" ${dataAttrs}>${text}</a>`;
 }
 
 /**
@@ -163,18 +169,20 @@ function jsonRender(data, formatter) {
  * 表格视图
  * @param {*} columns 
  * @param {*} data 
- * @param {*} renderFn 
+ * @param {*} option 
  */
-function tableRender(columns, data, renderFn) {
-    if(arguments.length === 1) {
+function tableRender(columns, data, option) {
+    if(arguments.length < 3 && !Array.isArray(data)) {
+        option = data;
         data = columns;
         columns = null;
     }
 
-    if(isFunction(data)) {
-        renderFn = data;
-        data = columns;
-        columns = null;
+    if(!option) {
+        option = {
+            // auto | fixed
+            layout: "auto"
+        };
     }
 
     if(!Array.isArray(data)) {
@@ -189,8 +197,8 @@ function tableRender(columns, data, renderFn) {
         }
     }
 
-    if(!isFunction(renderFn)) {
-        renderFn = resultRender;
+    if(!isFunction(option.renderFn)) {
+        option.renderFn = resultRender;
     }
 
     function formatValue(column, row, val, rowIndex, colIndex) {
@@ -277,7 +285,7 @@ function tableRender(columns, data, renderFn) {
         return htmlBuilder.join("");
     }
 
-    renderFn(`
+    return option.renderFn(`
         <div class="result-content-panel result-content-border">
             <table class="table-view" cellspacing="0" cellpadding="0">
                 ${colgroup(columns)}
@@ -402,7 +410,7 @@ function cardRender(data, options) {
  * 将属性对应生成为组件
  * @param {*} propertyInfo 属性信息
  */
-function propertyRender(propertyInfo) {
+function propertyRender(propertyInfo, depMap, scope) {
     function insertStar(hasStar) {
         return hasStar ? `<span class="required-star">*</span>` : "";
     }
@@ -481,40 +489,51 @@ function propertyRender(propertyInfo) {
 
     let htmlBuilder = [];
     let value = propertyInfo.value || "";
-    htmlBuilder.push(`<label class="label-text">${propertyInfo.label || propertyInfo.id}</label>${insertStar(propertyInfo.required)}<br>`);
+    let propertyId = createPropertyId(scope, propertyInfo.id);
+    htmlBuilder.push(`<label class="label-text">${propertyInfo.label || propertyId}</label>${insertStar(propertyInfo.required)}<br>`);
     switch(propertyInfo.type) {
         case "string":
-            htmlBuilder.push(`<input id="${propertyInfo.id}" type="text" data-property-name="${propertyInfo.id}" value="${value}" />`);
+            htmlBuilder.push(`<input id="${propertyId}" type="text" data-property-name="${propertyId}" value="${value}" />`);
             break;
         case "text":
-            htmlBuilder.push(`<textarea id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">${value}</textarea>`);
+            htmlBuilder.push(`<textarea id="${propertyId}" data-property-name="${propertyId}">${value}</textarea>`);
             break;
         case "select":
-            htmlBuilder.push(`<select id="${propertyInfo.id}" data-property-name="${propertyInfo.id}">`);
+            if(propertyInfo.optionsDep) {
+                Object.keys(propertyInfo.optionsDep).forEach(k => {
+                    addDependency(k, {
+                        depFn: propertyInfo.optionsDep[k],
+                        destinationProperyInfo: propertyInfo,
+                        selectRender
+                    });
+                });
+                options = [];
+            }
+            htmlBuilder.push(`<select id="${propertyId}" data-property-name="${propertyId}">`);
             htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
             htmlBuilder.push(`</select>`);
             break;
         case "checkbox":
         case "radio":
-            htmlBuilder.push(`<div id="${propertyInfo.id}" class="checkbox-panel">`);
+            htmlBuilder.push(`<div id="${propertyId}" class="checkbox-panel">`);
             htmlBuilder.push(groupItemRender(propertyInfo.options, propertyInfo, propertyInfo.type));
             htmlBuilder.push("</div>");
             break;
         case "file":
             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
                 <label class="label-file">
-                    <input id="${propertyInfo.id}" type="file" data-property-name="${propertyInfo.id}" value="">
+                    <input id="${propertyId}" type="file" data-property-name="${propertyId}" value="">
                     <span>${propertyInfo.label}</span>
                 </label>
             `);
             break;
         case "hidden":
             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
-                <input id="${propertyInfo.id}" type="hidden" data-property-name="${propertyInfo.id}" value="${value}" />
+                <input id="${propertyId}" type="hidden" data-property-name="${propertyId}" value="${value}" />
             `);
             break;
         default:
-            htmlBuilder.push(`<input id="${propertyInfo.id}" type="${propertyInfo.type}" data-property-name="${propertyInfo.id}" value="${value}"`);
+            htmlBuilder.push(`<input id="${propertyId}" type="${propertyInfo.type}" data-property-name="${propertyId}" value="${value}"`);
             ["min", "max", "step"].forEach(attr => {
                 if(!isEmpty(propertyInfo[attr])) {
                     htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
@@ -648,6 +667,7 @@ function editorRender(properties, layout) {
 }
 
 export {
+    createLinkButton,
     jsonRender,
     tableRender,
     pageButtonRender,

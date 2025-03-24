@@ -1,22 +1,25 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml } from "../common";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
-import { propertyRender } from "./panel-ui"
+import { getScopeInfo, addScopeInfo, parsePropertyName, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData } from "./module-scope";
+import { addDependency, updateDependency } from "../dependency";
+import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender } from "./panel-ui"
 
 let context;
 let modules = [];
 let currentMenuId;
+let bodyGroup;
+
+// state
 let currentModuleDisabled = false;
-let depMap = null;
+
+function isEmptyModule(module) {
+    return (!Array.isArray(module.properties) || module.properties.length === 0)
+        && (!Array.isArray(module.actions) || module.actions.length === 0)
+        && !isFunction(module.onOpend);
+}
 
 function setModuleDisabled(value) {
     currentModuleDisabled = value;
-}
-
-function addDependency(propertyId, depInfo) {
-    if(!depMap) {
-        depMap = new Map();
-    }
-    depMap.set(propertyId, depInfo);
 }
 
 function getCurrentModule(id) {
@@ -36,6 +39,77 @@ function getCurrentModule(id) {
     }
     return module;
 }
+
+//#region ActionContext API
+
+function createActionContext(ctx, scope) {
+    if(!ctx) {
+        ctx = {};
+    }
+    ctx.scope = scope;
+    ctx.godInfo = context;
+    let funcList = {
+        getCurrentViewModel,
+        checkCurrentViewModel,
+        showDetailPanel,
+        hideDetailPanel,
+        createLinkButton,
+        getElementData: wrapFunctionWithContext(function (key) {
+            return this.element ? this.element.dataset[key] : null;
+        }, ctx, scope),
+        setData: wrapFunctionWithContext(function(key, value) {
+            debugger
+            setScopeData(scope, key, value);
+        }, ctx, scope),
+        getData: wrapFunctionWithContext(function(key) {
+            return getScopeData(scope, key);
+        }, ctx, scope),
+        jsonRender: wrapFunctionWithContext(jsonRender, ctx, scope),
+        tableRender: wrapFunctionWithContext(tableRender, ctx, scope),
+        imageRender: wrapFunctionWithContext(imageRender, ctx, scope),
+        cardRender: wrapFunctionWithContext(cardRender, ctx, scope),
+        pageButtonRender: wrapFunctionWithContext(pageButtonRender, ctx, scope),
+        propertyRender: wrapFunctionWithContext(propertyRender, ctx, scope),
+    };
+    return Object.assign(ctx, funcList);
+}
+
+function createCallAction(module, scope) {
+    return (actionName, param) => {
+        if(!module || !Array.isArray(module.actions)) {
+            return;
+        }
+        let actionInfo = module.actions.find(b => b.actionName === actionName);
+        if(isFunction(actionInfo.action)) {
+            actionInfo.action(createActionContext({
+                module,
+                actionInfo,
+                scope,
+                param
+            }, scope));
+        }
+    };
+}
+
+function callAction(actionInfo, module, elem, scope) {
+    if(actionInfo && isFunction(actionInfo.action)) {
+        actionInfo.action(createActionContext({
+            element: elem,
+            callAction: createCallAction(module, scope),
+            module,
+            scope,
+            actionInfo
+        }, scope));
+    }
+}
+
+function isEditorProperty(property) {
+    return typeof property === "string" ? property.startsWith("editor_") : property.scope === "editor";
+}
+
+//#endregion
+
+//#region Data API
 
 function getCurrentViewModel() {
     let module = getCurrentModule();
@@ -94,55 +168,7 @@ function checkCurrentViewModel() {
     return result;
 }
 
-// 打开页面
-function openPage(moduleId) {
-    let moduleInfo = getCurrentModule(moduleId);
-    if(!moduleInfo) {
-        return;
-    }
-    let bodyLayout = isEmpty(moduleInfo.layout) ? "left-right" : moduleInfo.layout;
-    let elem = `
-        <div id="detailContentPanel" class="content-panel content-panel-actived">
-            <section class="title-panel">
-                <h1>${moduleInfo.menuText}</h1>
-                ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
-            </section>
-            <section class="body-panel ${bodyLayout}">
-                ${htmlCondition(Array.isArray(moduleInfo.properties) && moduleInfo.properties.length > 0, formRender(moduleInfo.properties), html`<section class="form-panel">${0}</section>`)}
-                <section class="result-panel"></section>
-            </section>
-            ${buttonRender(moduleInfo.button)}
-        </div>
-        <div id="loadingElement" class="page-progress large circles">
-            <span class="circle"></span>
-            <span class="circle"></span>
-            <span class="circle"></span>
-            <span class="circle"></span>
-            <span class="circle"></span>
-            <span class="circle"></span>
-        </div>
-    `;
-    replaceHtml(godDetailPanel, elem);
-
-    onOpend(moduleInfo);
-}
-
-// 关闭页面
-function closePage(moduleId) {
-    if(!moduleId) {
-        return;
-    }
-    let moduleInfo = getCurrentModule(moduleId);
-    if(!moduleInfo) {
-        return;
-    }
-
-    onClosed(moduleInfo);
-
-    // reset
-    currentMenuId = null;
-    depMap = null;
-}
+//#endregion
 
 //#region events
 
@@ -164,16 +190,186 @@ function onClosed(module) {
 
 //#endregion
 
-function callAction(actionInfo, module, elem) {
-    if(actionInfo && isFunction(actionInfo.action)) {
-        actionInfo.action({
-            element: elem,
-            module,
-            actionInfo,
-            getCurrentViewModel,
-            checkCurrentViewModel
-        });
+// 打开页面
+function openPage(moduleId) {
+    let moduleInfo = getCurrentModule(moduleId);
+    if(!moduleInfo) {
+        return;
     }
+
+    let scopeInfo = {
+        layout: moduleInfo.layout,
+        properties: moduleInfo.properties,
+        actions: moduleInfo.actions,
+        onOpend: moduleInfo.onOpend,
+        onClosed: moduleInfo.onClosed,
+        depMap: new Map()
+    };
+    addScopeInfo(scopeInfo);
+
+    let backActionStyle = "";
+    if(!isEmpty(moduleInfo.description)) {
+        backActionStyle = "margin-top:2px";
+    }
+    let elem = `
+        <div id="detailContentPanel" class="content-panel content-panel-actived">
+            <section class="header-panel">
+                <div class="action-panel">
+                    <a href="javascript:void(0)" ${htmlCondition(v => !isEmpty(v), backActionStyle, html`style="${0}"`)} class="back-action"></a>
+                </div>
+                <section class="title-panel">
+                    <h1>${moduleInfo.menuText}</h1>
+                    ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
+                </section>
+            </section>
+            <section class="body-group">
+                ${detailBodyRender(scopeInfo)}
+            </section>
+        </div>
+        <div id="loadingElement" class="page-progress large circles">
+            <span class="circle"></span>
+            <span class="circle"></span>
+            <span class="circle"></span>
+            <span class="circle"></span>
+            <span class="circle"></span>
+            <span class="circle"></span>
+        </div>
+    `;
+    replaceHtml(godDetailPanel, elem);
+
+    bodyGroup = godDetailPanel.querySelector(".body-group");
+    scopeInfo.bodyPanel = bodyGroup.querySelector(".body-panel");
+    
+    onOpend(scopeInfo);
+}
+
+// 关闭页面
+function closePage(moduleId) {
+    if(!moduleId) {
+        return;
+    }
+    let moduleInfo = getCurrentModule(moduleId);
+    if(!moduleInfo) {
+        return;
+    }
+
+    onClosed(moduleInfo);
+
+    // reset
+    currentMenuId = null;
+    bodyGroup = null;
+    releaseScopeStack();
+}
+
+// 打开子页面
+function showDetailPanel(scopeInfo, contentFn) {
+    return new Promise((resolve, reject) => {
+        if(isFunction(scopeInfo)) {
+            contentFn = scopeInfo;
+            scopeInfo = null;
+        }
+        if(!scopeInfo) {
+            scopeInfo = {};
+        }
+        scopeInfo.classes = ["move-out"];
+        scopeInfo.styles = ["display:none"];
+
+        let scope = addScopeInfo(scopeInfo);
+        scopeInfo.scope = scope;
+    
+        let html = detailBodyRender(scopeInfo);
+        appendHtml(bodyGroup, html);
+        let bodyPanelList = bodyGroup.querySelectorAll(".body-panel");
+        if(bodyPanelList && bodyPanelList.length > getScopeStackSize()) {
+            let currentScopeInfo = getScopeInfo(scope - 1);
+            let currentBody = currentScopeInfo.bodyPanel;
+            let nextBody = bodyPanelList[bodyPanelList.length - 1];
+
+            scopeInfo.bodyPanel = nextBody;
+
+            // 显示
+            nextBody.style.display = "flex";
+            // 更新依赖
+            updateDependency(detailOption.scope);
+
+            // 动画事件
+            onAnimationStart(nextBody, e => {
+                if(isFunction(contentFn)) {
+                    contentFn();
+                }
+            }, true);
+            onAnimationEnd(nextBody, e => {
+                try {
+                    resolve(createActionContext({
+                        element: null,
+                        module: scopeInfo,
+                        callAction: createCallAction(scopeInfo, scope)
+                    }, scope));
+                } catch(e) {    
+                    reject(e);
+                }
+            }, true);
+            onAnimationStart(currentBody, e => {
+                currentBody.style.display = "none";
+            }, true);
+
+            // 开始动画
+            requestAnimationFrame(() => {
+                currentBody.classList.add("move-hide");
+                nextBody.classList.remove("move-out");
+            });
+
+            // 显示后退按钮
+            let backAction = godInfo.currentModule?.backAction;
+            if(!backAction?.classList.contains("back-action-show")) {
+                backAction?.classList.add("back-action-show");
+            }
+        }
+    });
+}
+
+// 关闭子页面
+function hideDetailPanel() {
+    return new Promise((resolve, reject) => {
+        let bodyPanelStack = godInfo.currentModule?.bodyPanelStack;
+        if(!bodyPanelStack) {
+            try {
+                reject(new Error("no bodyPanelStack."));
+            } catch(e) {
+                console.error(e);
+            }
+            return;
+        }
+        if(bodyPanelStack.length <= 1) {
+            return;
+        }
+
+        let currentScopeIndex = bodyPanelStack.length - 1;
+        //removeScopeInfo(currentScopeIndex);
+
+        let nextBody = bodyPanelStack.pop();
+        let currentBody = bodyPanelStack[currentScopeIndex - 1];
+        if(currentBody && nextBody) {
+            // 设置动画事件
+            let nextTransitionendFn = event => {
+                nextBody.removeEventListener("transitionend", nextTransitionendFn);
+                nextBody.remove();
+                resolve();
+            };
+            nextBody.addEventListener("transitionend", nextTransitionendFn, false);
+            currentBody.style.display = "flex";
+            requestAnimationFrame(() => {
+                currentBody.classList.remove("move-hide");
+                nextBody.classList.add("move-out");
+            });
+
+            // 隐藏后退按钮
+            if(bodyPanelStack.length <= 1) {
+                let backAction = godInfo.currentModule?.backAction;
+                backAction?.classList.remove("back-action-show");
+            }
+        }
+    });
 }
 
 function initModules(moduleList, ctx) {
@@ -181,6 +377,7 @@ function initModules(moduleList, ctx) {
     context = ctx;
     let godMenuPanel = context.godMenuPanel;
     let godDetailPanel = context.godDetailPanel;
+
     function menuItemRender(menuItem, id, level) {
         let marginLeft = 8 + 40 * level;
         menuItem.id = id;
@@ -223,16 +420,13 @@ function initModules(moduleList, ctx) {
     });
     onOpend(module => {
         if(isFunction(module.onOpend)) {
-            module.onOpend({
+            let scope = 0;
+            module.onOpend(createActionContext({
                 module,
-                godInfo: context,
-                callAction: actionName => {
-                    let buttonInfo = module.button.find(b => b.actionName === actionName);
-                    callAction(buttonInfo, module, elem);
-                },
+                callAction: createCallAction(module, scope),
                 getCurrentViewModel,
                 checkCurrentViewModel
-            });
+            }, scope));
         }
     });
 
@@ -272,6 +466,10 @@ function initModules(moduleList, ctx) {
             if(currentMenuId === id) {
                 return;
             }
+            let module = getCurrentModule(id);
+            if(isEmptyModule(module)) {
+                return;
+            }
 
             let dtList = dl.getElementsByTagName("dt");
             for(let i = 0; i < dtList.length; i++) {
@@ -285,6 +483,7 @@ function initModules(moduleList, ctx) {
 
             elem.classList.add("menu-item-selected");
             currentMenuId = id;
+            newScopeStack();
 
             openPage(id);
         });
@@ -302,36 +501,62 @@ function initModules(moduleList, ctx) {
             elem = elem.parentNode;
         }
 
-        let module = getCurrentModule();
-        if(!module || !Array.isArray(module.button)) {
+        if(elem.classList.contains("back-action")) {
+            hideDetailPanel();
+            return;
+        }
+
+        let scope = elem.dataset.scope;
+        let module = getScopeInfo(scope);
+        if(!module || !Array.isArray(module.actions)) {
             return;
         }
 
         if(elem.tagName === "BUTTON") {
             let buttonIndex = elem.dataset.buttonIndex;
-            let buttonInfo = module.button[buttonIndex];
-            callAction(buttonInfo, module, elem);
+            let buttonInfo = module.actions[buttonIndex];
+            if(buttonInfo) {
+                callAction(buttonInfo, module, elem, scope);
+            } else {
+                console.error(`buttonIndex: ${buttonIndex} is not found.`);
+            }
         }
 
         if(elem.tagName === "A") {
             let actionName = elem.dataset.actionName;
-            let buttonInfo = module.button.find(b => b.actionName === actionName);
-            callAction(buttonInfo, module, elem);
+            if(isEmpty(actionName)) {
+                console.warn("actionName is empty.");
+                return;
+            }
+            let buttonInfo = module.actions.find(b => b.actionName === actionName);
+            if(buttonInfo) {
+                callAction(buttonInfo, module, elem, scope);
+            } else {
+                console.error(`actionName: ${actionName} is not found.`);
+            }
         }
     });
 
     on(godDetailPanel, "change", e => {
         let elem = e.target;
-        let value = elem.value;
-        let propertyName = elem.dataset.propertyName;
-        let module = getCurrentModule();
-        if(module && module.properties) {
-            for(let i = 0; i < module.properties.length; i++) {
-                let propertyInfo = module.properties[i];
-                if(propertyInfo.id === propertyName) {
+        const value = elem.value;
+        const propertyName = parsePropertyName(elem.dataset.propertyName);
+        const scope = propertyName.scope;
+        const propertyId = propertyName.id;
+        const scopeInfo = getScopeInfo(scope);
+        let properties;
+        if(isEditorProperty(propertyId)) {
+            properties = getEditorProperties(scope);
+        } else {
+            properties = scopeInfo.properties;
+        }
+        if(properties) {
+            for(let i = 0; i < properties.length; i++) {
+                let propertyInfo = properties[i];
+                if(propertyInfo.id === propertyId) {
                     switch(propertyInfo.type) {
                         case "file":
-                            callAction(propertyInfo, module, elem);
+                            callAction(propertyInfo, scopeInfo, elem);
                             break;
                         case "checkbox":
                             let selectedValues = Array.isArray(propertyInfo.value) ? propertyInfo.value : [];
@@ -349,6 +574,8 @@ function initModules(moduleList, ctx) {
                                     : value;
                             break;
                     }
+                    // 更新依赖
+                    updateDependency(scope, propertyInfo);
                     return;
                 }
             }
@@ -357,13 +584,13 @@ function initModules(moduleList, ctx) {
 }
 
 // 生成表单
-function formRender(properties) {
+function formRender(properties, scope) {
     let htmlBuilder = [];
     htmlBuilder.push('<ul class="form-list">');
     if(Array.isArray(properties)) {
         properties.forEach((p, i) => {
             htmlBuilder.push("<li>");
-            htmlBuilder.push(propertyRender(p));
+            htmlBuilder.push(propertyRender(p, addDependency, scope));
             htmlBuilder.push("</li>");
         });
     }
@@ -372,16 +599,19 @@ function formRender(properties) {
 }
 
 // 生成按钮
-function buttonRender(buttonList) {
+function buttonRender(buttonList, scope) {
     let htmlBuilder = [];
     if(Array.isArray(buttonList) && buttonList.length > 0) {
-        showButtons.forEach((b, i) => {
-            if(isEmpty(b.text)) {
-                return;
-            }
-            htmlBuilder.push(`<button data-button-index="${i}">${b.text}</button>`);
-        });
-
+        if(buttonList.length > 0) {
+            buttonList.forEach((b, i) => {
+                if(isEmpty(b.text)) {
+                    return;
+                }
+                htmlBuilder.push(`<button data-button-index="${i}"${htmlCondition(v => !isEmpty(v), scope, html` data-scope="${0}"`)}>${b.text}</button>`);
+            });
+        }
+    }
+    if(htmlBuilder.length > 0) {
         return `
             <section class="button-panel">
                 ${htmlBuilder.join("")}
@@ -391,10 +621,33 @@ function buttonRender(buttonList) {
     return "";
 }
 
+function detailBodyRender(detailOption) {
+    let bodyLayout = isEmpty(detailOption.layout) ? "left-right" : detailOption.layout;
+    let properties = detailOption.properties;
+    let actions = detailOption.actions;
+    let scope = detailOption.scope;
+    let bodyClass = 
+        Array.isArray(detailOption.classes) && detailOption.classes.length > 0 
+            ? " " + detailOption.classes.join(" ")
+            : "";
+    let bodyStyle = 
+        Array.isArray(detailOption.styles) && detailOption.styles.length > 0 
+            ? ` style="${detailOption.styles.join(";")}"` 
+            : "";
+    return `
+        <section class="body-panel${bodyClass}"${bodyStyle}>
+            <section class="body-container ${bodyLayout}">
+                ${htmlCondition(Array.isArray(properties) && properties.length > 0, formRender(properties, scope), html`<section class="form-panel">${0}</section>`)}
+                <section class="result-panel"></section>
+            </section>
+            ${buttonRender(actions, scope)}
+        </section>
+    `;
+} 
+
 export {
     setModuleDisabled,
     initModules,
     onOpend,
-    onClosed,
-    addDependency
+    onClosed
 };

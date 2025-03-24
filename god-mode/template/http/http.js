@@ -1,16 +1,3 @@
-import { saveAs } from "./common";
-import { hideLoading, showLoading } from "./ui/loading";
-
-const globalConfig = {
-    credentials: "include"
-};
-
-function setGlobalConfig(config) {
-    if(config) {
-        Object.assign(globalConfig, config);
-    }
-}
-
 function getContentDisposition(header) {
     let content = header.get("Content-Disposition");
     content = content ? content : "";
@@ -41,6 +28,10 @@ async function httpUpload(url, data) {
 
 async function httpDownload(url, data, filename, method) {
     let resp;
+    const options = {
+        responseDataType: "file"
+    };
+
     if(arguments.length < 4 && typeof data === "string") {
         let upCase = data.toUpperCase();
         if(upCase === "GET" || upCase === "POST") {
@@ -52,9 +43,6 @@ async function httpDownload(url, data, filename, method) {
         data = null;
     }
 
-    const options = {
-        responseDataType: "file"
-    };
     if(method === "GET") {
         resp = await httpGet(url, data, options);
     } else {
@@ -137,8 +125,10 @@ async function parallelRequest(requestTasks, option) {
             }
         }
     }
+
+    godInfo.loading = true;
+
     try {
-        showLoading();
         let executors = [];
         for(let i = 0; i < option.size; i++) {
             executors.push(execTask());
@@ -146,9 +136,8 @@ async function parallelRequest(requestTasks, option) {
 
         await Promise.all(executors);
     } catch(e) {
-        throw e;
-    } finally {
-        hideLoading();
+        console.error(e);
+        godInfo.loading = false;
     }
     return result;
 }
@@ -201,6 +190,9 @@ async function httpRequest(url, method, data, options) {
         if(hasRequestBody && requestDataType === "json") {
             defaultHeaders["Content-Type"] = "application/json";
         }
+        if(isFunction(godInfo.http.setDefaultHeaders)) {
+            godInfo.http.setDefaultHeaders(defaultHeaders);
+        }
         return defaultHeaders;
     }
 
@@ -222,7 +214,10 @@ async function httpRequest(url, method, data, options) {
     let fetchInit = Object.assign({
         method: method,
         headers: initHeader()
-    }, options, globalConfig);
+    }, options);
+    if(godInfo.http.carryCookie) {
+        fetchInit.credentials = "include";
+    }
     fetchInit.body = initBody();
 
     let urlParams = data;
@@ -243,12 +238,12 @@ async function httpRequest(url, method, data, options) {
 
     let response = null;
     try {
-        showLoading();
+        godInfo.loading = true;
         response = await fetch(url, fetchInit);
     } catch(e) {
         throw e;
     } finally {
-        hideLoading();
+        godInfo.loading = false;
     }
 
     if(responseDataType === "file") {
@@ -272,13 +267,3 @@ async function httpRequest(url, method, data, options) {
         }
     }
 }
-
-export {
-    setGlobalConfig,
-    getContentDisposition,
-    httpUpload,
-    httpDownload,
-    httpGet,
-    httpPost,
-    httpRequest
-};

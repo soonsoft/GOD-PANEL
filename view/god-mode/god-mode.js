@@ -6,11 +6,13 @@ import { formModule } from "./modules/form-module";
 import { loadingModule } from "./modules/loading-module";
 import { renderModule } from "./modules/render-module";
 import { aboutModule } from "./modules/about-module";
+import { crudModule } from "./modules/crud-module";
 
 const moduleList = [
     formModule,
     loadingModule,
     renderModule,
+    crudModule,
     aboutModule
 ];
 
