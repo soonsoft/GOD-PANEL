@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"bitoAI.codeCompletion.enableAutoCompletion": false
+	}
+}

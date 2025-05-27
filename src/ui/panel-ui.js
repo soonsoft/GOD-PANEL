@@ -202,9 +202,11 @@ function tableRender(columns, data, option) {
     }
 
     function formatValue(column, row, val, rowIndex, colIndex) {
-        return isFunction(column.formatter) 
+        let result = isFunction(column.formatter) 
                 ? column.formatter(val, { row: row, column: column, rowIndex: rowIndex, colIndex: colIndex}) 
                 : val;
+        result = Array.isArray(result) ? result.join("") : result;
+        return isEmpty(result) ? "" : result;
     }
 
     function formatColumn(column, val, colIndex) {
@@ -330,6 +332,13 @@ function imageRender() {
         }
     }
 
+    let containerStyle = "";
+    let imageStyle = "";
+    if(options.fillStyle === "contain") {
+        containerStyle = "calc(100% - 20px);";
+        imageStyle = "width:100%;height:100%;object-fit:contain;";
+    }
+
     let argArray = Array.prototype.slice.call(arguments, imageArgIndex, arguments.length);
     let afterTasks = [];
     let htmlBuilder = [];
@@ -338,9 +347,9 @@ function imageRender() {
         if(isEmpty(arg)) {
             continue;
         }
-        htmlBuilder.push(`<div class="result-content-panel">`);
+        htmlBuilder.push(`<div class="result-content-panel" ${containerStyle}>`);
         if(options.type === "url") {
-            htmlBuilder.push(`<img class="image-view" src="${arg}">`);
+            htmlBuilder.push(`<img class="image-view" ${imageStyle} src="${arg}">`);
         } else if(options.type === "base64") {
             let mime, data;
             if(typeof arg === "string") {
@@ -459,19 +468,19 @@ function propertyRender(propertyInfo, depMap, scope) {
         return htmlBuilder.join("");
     }
 
-    function groupItemRender(options, propertyInfo, type) {
+    function groupItemRender(options, propertyInfo, propertyId) {
         let htmlBuilder = [];
         if(Array.isArray(options)) {
-            let selectedValue = type === "checkbox" ? [] : "";
+            let selectedValue = propertyInfo.type === "checkbox" ? [] : "";
             options.forEach((option, idx) => {
-                let id = `${propertyInfo.id}_${idx}`;
+                let id = `${propertyId}::${idx}`;
                 let value = option.value;
                 let text = option.text || value;
                 let selected = !!option.selected;
-                htmlBuilder.push(`<input id="${id}" data-property-name="${propertyInfo.id}" type="${type}" ${htmlCondition(type === 'radio', propertyInfo.id, html`name="${0}"`)} value="${value}" ${selected ? "checked" : ""}>`);
+                htmlBuilder.push(`<input id="${id}" type="${propertyInfo.type}" ${htmlCondition(propertyInfo.type === 'radio', propertyId, html`name="${0}"`)} value="${value}" ${selected ? "checked" : ""}>`);
                 htmlBuilder.push(`<label for="${id}" class="checkbox-text">${text}</label>`);
                 if(selected) {
-                    if(type === "checkbox") {
+                    if(propertyInfo.type === "checkbox") {
                         selectedValue.push(value);
                     } else {
                         selectedValue = value;
@@ -490,13 +499,14 @@ function propertyRender(propertyInfo, depMap, scope) {
     let htmlBuilder = [];
     let value = propertyInfo.value || "";
     let propertyId = createPropertyId(scope, propertyInfo.id);
+    // propertyInfo.id = propertyId;
     htmlBuilder.push(`<label class="label-text">${propertyInfo.label || propertyId}</label>${insertStar(propertyInfo.required)}<br>`);
     switch(propertyInfo.type) {
         case "string":
-            htmlBuilder.push(`<input id="${propertyId}" type="text" data-property-name="${propertyId}" value="${value}" />`);
+            htmlBuilder.push(`<input id="${propertyId}" type="text" value="${value}" />`);
             break;
         case "text":
-            htmlBuilder.push(`<textarea id="${propertyId}" data-property-name="${propertyId}">${value}</textarea>`);
+            htmlBuilder.push(`<textarea id="${propertyId}">${value}</textarea>`);
             break;
         case "select":
             if(propertyInfo.optionsDep) {
@@ -509,31 +519,46 @@ function propertyRender(propertyInfo, depMap, scope) {
                 });
                 options = [];
             }
-            htmlBuilder.push(`<select id="${propertyId}" data-property-name="${propertyId}">`);
+            htmlBuilder.push(`<select id="${propertyId}">`);
             htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));
             htmlBuilder.push(`</select>`);
             break;
         case "checkbox":
         case "radio":
             htmlBuilder.push(`<div id="${propertyId}" class="checkbox-panel">`);
-            htmlBuilder.push(groupItemRender(propertyInfo.options, propertyInfo, propertyInfo.type));
+            htmlBuilder.push(groupItemRender(propertyInfo.options, propertyInfo, propertyId));
             htmlBuilder.push("</div>");
+            propertyInfo.updatePropertyElement = value => {
+                if(isEmpty(value)) {
+                    value = [];
+                }
+                value = Array.isArray(value) ? value : [value];
+                let elem = document.getElementById(propertyId);
+                if(elem) {
+                    let checkboxes = elem.querySelectorAll("input[type=checkbox], input[type=radio]");
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = value.includes(checkbox.value);
+                    });
+                }
+            };
             break;
         case "file":
             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
                 <label class="label-file">
-                    <input id="${propertyId}" type="file" data-property-name="${propertyId}" value="">
+                    <input id="${propertyId}" type="file" value="">
                     <span>${propertyInfo.label}</span>
                 </label>
             `);
+            // file 无法通过 value 设置
+            propertyInfo.updatePropertyElement = value => {};
             break;
         case "hidden":
             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
-                <input id="${propertyId}" type="hidden" data-property-name="${propertyId}" value="${value}" />
+                <input id="${propertyId}" type="hidden" value="${value}" />
             `);
             break;
         default:
-            htmlBuilder.push(`<input id="${propertyId}" type="${propertyInfo.type}" data-property-name="${propertyId}" value="${value}"`);
+            htmlBuilder.push(`<input id="${propertyId}" type="${propertyInfo.type}" value="${value}"`);
             ["min", "max", "step"].forEach(attr => {
                 if(!isEmpty(propertyInfo[attr])) {
                     htmlBuilder.push(` ${attr}="${propertyInfo[attr]}"`);
@@ -541,6 +566,14 @@ function propertyRender(propertyInfo, depMap, scope) {
             });
             htmlBuilder.push(" />")
             break;
+    }
+    if(!propertyInfo.updatePropertyElement) {
+        propertyInfo.updatePropertyElement = value => {
+            let elem = document.getElementById(propertyId);
+            if(elem) {
+                elem.value = value;
+            }
+        };
     }
     return htmlBuilder.join("");
 }

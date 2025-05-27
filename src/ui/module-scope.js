@@ -17,6 +17,14 @@ function getScopeStackSize() {
     return bodyScopeStack.length;
 }
 
+function popScopeStack() {
+    return bodyScopeStack.pop();
+}
+
+function peekScopeStack() {
+    return bodyScopeStack[bodyScopeStack.length - 1];
+}
+
 //#region scope API
 
 function getScopeInfo(scope) {
@@ -113,12 +121,12 @@ function wrapFunctionWithContext(fn, ctx, scope) {
 
 //#region PropertyWithScope
 
-function parsePropertyName(name) {
+function parsePropertyId(id) {
     let result = {
         scope: undefined,
         id: undefined
     };
-    let arr = name.split("::");
+    let arr = id.split("::");
     if(arr.length > 1) {
         result.scope = parseInt(arr[0], 10);
         result.id = arr[1];
@@ -156,6 +164,8 @@ export {
     newScopeStack,
     releaseScopeStack,
     getScopeStackSize,
+    popScopeStack,
+    peekScopeStack,
     resultRender,
     wrapFunctionWithContext,
     getScopeInfo,
@@ -163,7 +173,7 @@ export {
     getLastScopeInfo,
     addScopeInfo,
     popScopeInfo,
-    parsePropertyName,
+    parsePropertyId,
     createPropertyId,
     isEditorProperty,
     getScopeData,

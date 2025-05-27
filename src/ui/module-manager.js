@@ -1,13 +1,13 @@
 import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
-import { getScopeInfo, addScopeInfo, parsePropertyName, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData } from "./module-scope";
+import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
 import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender } from "./panel-ui"
 
 let context;
 let modules = [];
 let currentMenuId;
-let bodyGroup;
+let bodyGroup, backAction;
 
 // state
 let currentModuleDisabled = false;
@@ -49,8 +49,18 @@ function createActionContext(ctx, scope) {
     ctx.scope = scope;
     ctx.godInfo = context;
     let funcList = {
-        getCurrentViewModel,
-        checkCurrentViewModel,
+        getCurrentViewModel: () => {
+            return getCurrentViewModel(null, ctx.scope);
+        },
+        checkCurrentViewModel: () => {
+            return checkCurrentViewModel(null, ctx.scope);
+        },
+        getPropertyValue: (propertyName) => {
+            return getPropertyValue(propertyName, ctx.scope);
+        }
+        , setPropertyValue: (propertyName, value) => {
+            return setPropertyValue(propertyName, value, ctx.scope);
+        },
         showDetailPanel,
         hideDetailPanel,
         createLinkButton,
@@ -58,7 +68,6 @@ function createActionContext(ctx, scope) {
             return this.element ? this.element.dataset[key] : null;
         }, ctx, scope),
         setData: wrapFunctionWithContext(function(key, value) {
-            debugger
             setScopeData(scope, key, value);
         }, ctx, scope),
         getData: wrapFunctionWithContext(function(key) {
@@ -75,18 +84,35 @@ function createActionContext(ctx, scope) {
 }
 
 function createCallAction(module, scope) {
-    return (actionName, param) => {
+    return (actionName, param, onsuccess, onerror) => {
         if(!module || !Array.isArray(module.actions)) {
             return;
         }
         let actionInfo = module.actions.find(b => b.actionName === actionName);
         if(isFunction(actionInfo.action)) {
-            actionInfo.action(createActionContext({
-                module,
-                actionInfo,
-                scope,
-                param
-            }, scope));
+            let doSuccess = (result) => {
+                if(isFunction(onsuccess)) {
+                    onsuccess(result);
+                }
+            };
+            let doError = (error) => {
+                if(isFunction(onerror)) {
+                    onerror(error);
+                }
+            };
+            try {
+                let result = actionInfo.action(createActionContext({
+                    module,
+                    actionInfo,
+                    scope,
+                    param
+                }, scope));
+                if(result instanceof Promise) {
+                    result.then(doSuccess).catch(doError);
+                }
+            } catch(e) {
+                doError(e);
+            }
         }
     };
 }
@@ -111,28 +137,40 @@ function isEditorProperty(property) {
 
 //#region Data API
 
-function getCurrentViewModel() {
-    let module = getCurrentModule();
+function getCurrentViewModel(properties, scope) {
+    if(!properties) {
+        let scopeInfo = getScopeInfo(scope || 0);
+        properties = scopeInfo.properties;
+    }
     let model = {};
-    if(Array.isArray(module.properties)) {
-        module.properties.forEach((e, i) => {
+    if(Array.isArray(properties)) {
+        properties.forEach((e, i) => {
             model[e.id] = e.value;
         });
     }
     return model;
 }
 
-function checkCurrentViewModel() {
-    let module = getCurrentModule();
+function checkCurrentViewModel(properties, scope) {
+    let checkPropertyList = [];
+    if(typeof properties === "string") {
+        checkPropertyList = Array.prototype.slice.call(arguments, 0, arguments.length);
+        properties = null;
+    } else {
+        checkPropertyList = Array.prototype.slice.call(arguments, 1, arguments.length);
+    }
+
+    if(!properties) {
+        let scopeInfo = getScopeInfo(scope || 0);
+        properties = scopeInfo.properties;
+    }
     let result = {
         valid: true,
         messages: []
     };
-    if(Array.isArray(module.properties)) {
-        let properties = module.properties;
-        if(arguments.length > 0) {
-            let idArr = Array.prototype.slice.call(arguments, 0, arguments.length);
-            properties = properties.filter(p => idArr.include(p.id));
+    if(Array.isArray(properties)) {
+        if(checkPropertyList.length > 0) {
+            properties = properties.filter(p => checkPropertyList.includes(p.id));
         }
         properties.forEach((p, i) => {
             if(p.required && isEmpty(p.value)) {
@@ -147,7 +185,6 @@ function checkCurrentViewModel() {
                         result.messages.push(`${p.label || p.id}不能为空`);
                     }
                 }
-                
             }
             if(isFunction(p.validate) && !p.validate(e.value)) {
                 result.messages.push(`${p.label || p.id}的值不符合要求`);
@@ -166,6 +203,38 @@ function checkCurrentViewModel() {
         return !result.valid;
     };
     return result;
+}
+
+function getPropertyValue(propertyName, scope) {
+    let scopeInfo = getScopeInfo(scope || 0);
+    let properties = scopeInfo.properties;
+    if(Array.isArray(properties)) {
+        for(let i = 0; i < properties.length; i++) {
+            let propertyInfo = properties[i];
+            if(propertyInfo.name === propertyName) {
+                return propertyInfo.value;
+            }
+        }
+    }
+    return null;
+}
+function setPropertyValue(propertyName, value, scope) {
+    let scopeInfo = getScopeInfo(scope || 0);
+    let properties = scopeInfo.properties;
+    if(!properties) {
+        return;
+    }
+    let propertyId = parsePropertyId(propertyName);
+    for(let i = 0; i < properties.length; i++) {
+        let propertyInfo = properties[i];
+        if(propertyInfo.id === propertyId) {
+            propertyInfo.value = value;
+            if(isFunction(propertyInfo.updatePropertyElement)) {
+                propertyInfo.updatePropertyElement(value);
+            }
+            break;
+        }
+    }
 }
 
 //#endregion
@@ -238,6 +307,7 @@ function openPage(moduleId) {
     replaceHtml(godDetailPanel, elem);
 
     bodyGroup = godDetailPanel.querySelector(".body-group");
+    backAction = bodyGroup.querySelector("a.back-action");
     scopeInfo.bodyPanel = bodyGroup.querySelector(".body-panel");
     
     onOpend(scopeInfo);
@@ -280,7 +350,7 @@ function showDetailPanel(scopeInfo, contentFn) {
         let html = detailBodyRender(scopeInfo);
         appendHtml(bodyGroup, html);
         let bodyPanelList = bodyGroup.querySelectorAll(".body-panel");
-        if(bodyPanelList && bodyPanelList.length > getScopeStackSize()) {
+        if(bodyPanelList && bodyPanelList.length === getScopeStackSize()) {
             let currentScopeInfo = getScopeInfo(scope - 1);
             let currentBody = currentScopeInfo.bodyPanel;
             let nextBody = bodyPanelList[bodyPanelList.length - 1];
@@ -290,7 +360,7 @@ function showDetailPanel(scopeInfo, contentFn) {
             // 显示
             nextBody.style.display = "flex";
             // 更新依赖
-            updateDependency(detailOption.scope);
+            updateDependency(scope);
 
             // 动画事件
             onAnimationStart(nextBody, e => {
@@ -316,11 +386,13 @@ function showDetailPanel(scopeInfo, contentFn) {
             // 开始动画
             requestAnimationFrame(() => {
                 currentBody.classList.add("move-hide");
-                nextBody.classList.remove("move-out");
+                // 兼容 Firefox，Firefox需要做第二帧才能将nextBody移动到右边
+                requestAnimationFrame(() => {
+                    nextBody.classList.remove("move-out");
+                });
             });
 
             // 显示后退按钮
-            let backAction = godInfo.currentModule?.backAction;
             if(!backAction?.classList.contains("back-action-show")) {
                 backAction?.classList.add("back-action-show");
             }
@@ -331,24 +403,21 @@ function showDetailPanel(scopeInfo, contentFn) {
 // 关闭子页面
 function hideDetailPanel() {
     return new Promise((resolve, reject) => {
-        let bodyPanelStack = godInfo.currentModule?.bodyPanelStack;
-        if(!bodyPanelStack) {
-            try {
-                reject(new Error("no bodyPanelStack."));
-            } catch(e) {
-                console.error(e);
-            }
-            return;
-        }
-        if(bodyPanelStack.length <= 1) {
+        // let bodyPanelStack = godInfo.currentModule?.bodyPanelStack;
+        // if(!bodyPanelStack) {
+        //     try {
+        //         reject(new Error("no bodyPanelStack."));
+        //     } catch(e) {
+        //         console.error(e);
+        //     }
+        //     return;
+        // }
+        if(getScopeStackSize() <= 1) {
             return;
         }
 
-        let currentScopeIndex = bodyPanelStack.length - 1;
-        //removeScopeInfo(currentScopeIndex);
-
-        let nextBody = bodyPanelStack.pop();
-        let currentBody = bodyPanelStack[currentScopeIndex - 1];
+        let nextBody = popScopeStack().bodyPanel;
+        let currentBody = peekScopeStack().bodyPanel;
         if(currentBody && nextBody) {
             // 设置动画事件
             let nextTransitionendFn = event => {
@@ -364,10 +433,9 @@ function hideDetailPanel() {
             });
 
             // 隐藏后退按钮
-            if(bodyPanelStack.length <= 1) {
-                let backAction = godInfo.currentModule?.backAction;
-                backAction?.classList.remove("back-action-show");
-            }
+            // if(bodyPanelStack.length <= 1) {
+            //     backAction?.classList.remove("back-action-show");
+            // }
         }
     });
 }
@@ -405,16 +473,15 @@ function initModules(moduleList, ctx) {
 
     onClosed(module => {
         if(isFunction(module.onClosed)) {
-            module.onClosed({
-                module,
-                getCurrentViewModel,
-                checkCurrentViewModel
-            });
+            module.onClosed(createActionContext({
+                module
+            }));
         }
 
         if(Array.isArray(module.properties)) {
             module.properties.forEach((e, i) => {
                 e.value = "";
+                delete e.updatePropertyElement;
             });
         }
     });
@@ -423,9 +490,7 @@ function initModules(moduleList, ctx) {
             let scope = 0;
             module.onOpend(createActionContext({
                 module,
-                callAction: createCallAction(module, scope),
-                getCurrentViewModel,
-                checkCurrentViewModel
+                callAction: createCallAction(module, scope)
             }, scope));
         }
     });
@@ -540,12 +605,12 @@ function initModules(moduleList, ctx) {
     on(godDetailPanel, "change", e => {
         let elem = e.target;
         const value = elem.value;
-        const propertyName = parsePropertyName(elem.dataset.propertyName);
-        const scope = propertyName.scope;
-        const propertyId = propertyName.id;
+        const propertyId = parsePropertyId(elem.id);
+        const scope = propertyId.scope;
+        const propertyName = propertyId.id;
         const scopeInfo = getScopeInfo(scope);
         let properties;
-        if(isEditorProperty(propertyId)) {
+        if(isEditorProperty(propertyName)) {
             properties = getEditorProperties(scope);
         } else {
             properties = scopeInfo.properties;
@@ -553,7 +618,7 @@ function initModules(moduleList, ctx) {
         if(properties) {
             for(let i = 0; i < properties.length; i++) {
                 let propertyInfo = properties[i];
-                if(propertyInfo.id === propertyId) {
+                if(propertyInfo.id === propertyName) {
                     switch(propertyInfo.type) {
                         case "file":
                             callAction(propertyInfo, scopeInfo, elem);

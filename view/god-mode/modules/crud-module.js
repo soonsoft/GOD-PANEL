@@ -1,5 +1,3 @@
-import { pageButtonRender, tableRender, jsonRender } from "../../../src/ui/panel-ui";
-
 //#region  DB
 
 const database = [
@@ -154,7 +152,7 @@ const crudModule = {
                 let rowData = tableData[rowIndex];
                 ctx.showDetailPanel()
                     .then(childCtx => {
-                        return childCtx.resultRender(rowData);
+                        return childCtx.jsonRender(rowData);
                     });
             }
         },
@@ -166,11 +164,11 @@ const crudModule = {
                 let rowData = tableData[rowIndex];
                 ctx.showDetailPanel({
                     properties: createProperties(rowData),
-                    button: [
+                    actions: [
                         {
                             text: "保存",
                             action: childCtx => {
-                                if(childCtx.checkCurrentViewModel().invalid(v => childCtx.resultRender(v.messages))) {
+                                if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }
                                 let data = childCtx.getCurrentViewModel();
@@ -183,6 +181,12 @@ const crudModule = {
                                     .then(() => {
                                         ctx.callAction("query");
                                     });
+                            }
+                        },
+                        {
+                            text: "返回",
+                            action: childCtx => {
+                                childCtx.hideDetailPanel();
                             }
                         }
                     ]
@@ -207,11 +211,11 @@ const crudModule = {
             action: ctx => {
                 ctx.showDetailPanel({
                     properties: createProperties(),
-                    button: [
+                    actions: [
                         {
                             text: "保存",
                             action: childCtx => {
-                                if(childCtx.checkCurrentViewModel().invalid(v => childCtx.resultRender(v.messages))) {
+                                if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }
                                 let data = childCtx.getCurrentViewModel();
@@ -221,6 +225,12 @@ const crudModule = {
                                     .then(() => {
                                         ctx.callAction("query");
                                     });
+                            }
+                        },
+                        {
+                            text: "返回",
+                            action: childCtx => {
+                                childCtx.hideDetailPanel();
                             }
                         }
                     ]

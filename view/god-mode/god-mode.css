@@ -215,7 +215,7 @@ div.god-panel-show {
     left: -120vh;
     position: absolute;
     opacity: .7;
-    animation: element1 180s linear infinite;
+    /* animation: element1 180s linear infinite; */
 }
 
 @keyframes element2 {
@@ -232,7 +232,7 @@ div.god-panel-show {
     left: -160vh;
     position: absolute;
     opacity: .9;
-    animation: element2 200s linear infinite;
+    /* animation: element2 200s linear infinite; */
 }
 
 @keyframes element3 {
@@ -249,7 +249,7 @@ div.god-panel-show {
     right: -140vh;
     position: absolute;
     opacity: .8;
-    animation: element3 150s linear infinite;
+    /* animation: element3 150s linear infinite; */
     
 }
 
@@ -475,6 +475,7 @@ div.god-panel-show {
     margin: 0;
     padding: 0;
     flex: auto 0 0;
+    font-size: 18px;
 }
 
 #godPanel #godDetailPanel p {
@@ -910,6 +911,13 @@ div.god-panel-show {
 
 #godPanel #godDetailPanel .table-view-row:last-child .table-view-td {
     border-bottom: none 0;
+}
+
+#godPanel #godDetailPanel .table-view-td a {
+    margin-left: 10px;
+}
+#godPanel #godDetailPanel .table-view-td a:first-child {
+    margin-left: 0;
 }
 
 #godPanel #godDetailPanel .image-view {
