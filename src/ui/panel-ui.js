@@ -425,12 +425,19 @@ function propertyRender(propertyInfo, depMap, scope) {
     }
 
     function selectRender(options, propertyInfo) {
-        let htmlBuilder = [];
-        htmlBuilder.push(`<option value="">请选择</option>`);
+        let htmlBuilder = [`<option value="">请选择</option>`];
+        let selectValue = propertyInfo.value;
         propertyInfo.value = "";
         if(Array.isArray(options)) {
             let optionGroup = {};
             options.forEach(option => {
+                if(selectValue) {
+                    if(p.value === selectValue) {
+                        p.selected = true;
+                    } else {
+                        p.selected = false;
+                    }
+                }
                 let group = option.group || "NONE";
                 let groupItem = optionGroup[group];
                 if(!groupItem) {
@@ -664,7 +671,7 @@ function editorRender(properties, layout) {
     if(!layout.columnWidth) {
         layout.columnWidth = "1fr";
     }
-    let gridTemplateColumns = `grid-template-columns:${isNaN(Number.parseInt(layout.columns)) ? repeat(2, () => layout.columnWidth) : repeat(layout.columns, () => layout.columnWidth)};`;
+    let gridTemplateColumns = `grid-template-columns:${Number.isNaN(Number.parseInt(layout.columns)) ? repeat(2, () => layout.columnWidth) : repeat(layout.columns, () => layout.columnWidth)};`;
     if(!layout.height) {
         layout.height = "auto";
     }

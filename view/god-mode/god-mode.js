@@ -36,7 +36,7 @@ function insertGodPanel() {
                 <div class="rectangle element3"></div>
             </div>
             <div id="godContentPanel">
-                <div id="godPanelHeader">
+                <div id="godPanelSider">
                     <button id="closeButton"></button>
                     <span class="god-text">I AM THE GOD PANEL</span>
                 </div>

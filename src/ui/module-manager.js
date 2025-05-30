@@ -34,7 +34,7 @@ function getCurrentModule(id) {
     let subIndex = parseInt(arr[1], 10);
 
     let module = modules[index];
-    if(!isNaN(subIndex)) {
+    if(!Number.isNaN(subIndex)) {
         module = module.subModules[subIndex];
     }
     return module;
@@ -57,8 +57,8 @@ function createActionContext(ctx, scope) {
         },
         getPropertyValue: (propertyName) => {
             return getPropertyValue(propertyName, ctx.scope);
-        }
-        , setPropertyValue: (propertyName, value) => {
+        },
+        setPropertyValue: (propertyName, value) => {
             return setPropertyValue(propertyName, value, ctx.scope);
         },
         showDetailPanel,
@@ -84,48 +84,48 @@ function createActionContext(ctx, scope) {
 }
 
 function createCallAction(module, scope) {
-    return (actionName, param, onsuccess, onerror) => {
+    return (actionName, param, onSuccess, onError) => {
         if(!module || !Array.isArray(module.actions)) {
             return;
         }
         let actionInfo = module.actions.find(b => b.actionName === actionName);
-        if(isFunction(actionInfo.action)) {
-            let doSuccess = (result) => {
-                if(isFunction(onsuccess)) {
-                    onsuccess(result);
-                }
-            };
-            let doError = (error) => {
-                if(isFunction(onerror)) {
-                    onerror(error);
-                }
-            };
-            try {
-                let result = actionInfo.action(createActionContext({
-                    module,
-                    actionInfo,
-                    scope,
-                    param
-                }, scope));
-                if(result instanceof Promise) {
-                    result.then(doSuccess).catch(doError);
-                }
-            } catch(e) {
-                doError(e);
-            }
-        }
+        let options = {
+            onSuccess,
+            onError,
+            param
+        };
+        callAction(actionInfo, scopeInfo, null, scope, options);
     };
 }
 
-function callAction(actionInfo, module, elem, scope) {
+function callAction(actionInfo, module, elem, scope, options = {}) {
     if(actionInfo && isFunction(actionInfo.action)) {
-        actionInfo.action(createActionContext({
-            element: elem,
-            callAction: createCallAction(module, scope),
-            module,
-            scope,
-            actionInfo
-        }, scope));
+        const doSuccess = result => {
+            if(isFunction(options.onSuccess)) {
+                options.onSuccess.call(null, result);
+            }
+        };
+        const doError = e => {
+            if(isFunction(options.onError)) {
+                options.onError.call(null, e);
+            }
+        };
+        try {
+            let result = actionInfo.action(createActionContext({
+                element: elem,
+                callAction: createCallAction(module),
+                module,
+                actionInfo,
+                param: options.param
+            }, scope));
+            if(result instanceof Promise) {
+                result.then(doSuccess).catch(doError);
+            } else {
+                doSuccess(result);
+            }
+        } catch(e) {
+            doError(e);
+        }
     }
 }
 
@@ -173,15 +173,19 @@ function checkCurrentViewModel(properties, scope) {
             properties = properties.filter(p => checkPropertyList.includes(p.id));
         }
         properties.forEach((p, i) => {
-            if(p.required && isEmpty(p.value)) {
+            if(p.required ) {
                 if(p.type === "file") {
                     let fileInput = document.getElementById(p.id);
                     if(fileInput && fileInput.files.length === 0) {
                         fileInput.value = "";
                         result.messages.push(`${p.label || p.id}未选择文件`);
                     }
+                } else if(p.type === "checkbox") {
+                    if(!Array.isArray(p.value) || p.value.length === 0) {
+                        result.messages.push(`${p.label || p.id}未选择`);
+                    }
                 } else {
-                    if(isEmpty(p.value)) {
+                    if(isEmpty(p.value) || Number.isNaN(p.value)) {
                         result.messages.push(`${p.label || p.id}不能为空`);
                     }
                 }
@@ -637,6 +641,9 @@ function initModules(moduleList, ctx) {
                                 isFunction(propertyInfo.convertor)
                                     ? propertyInfo.convertor(value, propertyInfo)
                                     : value;
+                            if(Number.isNaN(propertyInfo.value)) {
+                                propertyInfo.value = undefined;
+                            }
                             break;
                     }
                     // 更新依赖

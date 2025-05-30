@@ -96,7 +96,7 @@ async function parallelRequest(requestTasks, option) {
     }
 
     option.size = parseInt(option.size);
-    if(isNaN(option.size) || option.size < 1) {
+    if(Number.isNaN(option.size) || option.size < 1) {
         option.size = 3;
     }
     if(isEmpty(option.method)) {
