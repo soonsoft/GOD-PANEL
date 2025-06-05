@@ -1,4 +1,6 @@
 let idValue = 0;
+const EventProxyFnPropery = Symbol("proxyFn");
+const EventProxyElementProperty = Symbol("proxyElement");
 
 function loadJS(src, callback) {
     const script = document.createElement("script");
@@ -134,6 +136,86 @@ function onAnimationEnd(element, eventFn, once) {
         }
     };
     on(element, "animationend", listener);
+}
+
+function createEventProxy(element, eventName) {
+    if(!element) {
+        throw new TypeError(`element is ${element}`);
+    }
+    if(isEmpty(eventName)) {
+        throw TypeError(`eventName is ${eventName}`);
+    }
+    const proxyEvents = [];
+    const proxy = {
+        on: fn => {
+            if(!isFunction(fn)) {
+                return false;
+            }
+            for(let i = 0; i < proxyEvents.length; i++) {
+                if(proxyEvents[i] === fn) {
+                    return false;
+                }
+            }
+            proxyEvents.push(fn);
+            return true;
+        },
+        off: fn => {
+            if(!isFunction(fn)) {
+                return false;
+            }
+            for(let i = 0; i < proxyEvents.length; i++) {
+                if(proxyEvents[i] === fn) {
+                    proxyEvents.splice(i, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+    Object.defineProperty(proxy, "eventName", {
+        get: () => eventName,
+        configurable: false,
+        enumerable: true
+    });
+    proxy[EventProxyElementProperty] = element;
+    proxy[EventProxyFnPropery] = e => {
+        let elem = e.target;
+        while(elem !== element) {
+            let isAborted = false;
+            for(let i = 0; i < proxyEvents.length; i++) {
+                let proxyFn = proxyEvents[i];
+                let behavior = {
+                    hitting: false,
+                    aborting: false
+                };
+                const setBehavior = values => Object.assign(behavior, values);
+                try {
+                    proxyFn(elem, e, setBehavior);
+                    isAborted = behavior.aborting;
+                    if(behavior.hitting) {
+                        break;
+                    }
+                } catch(e) {
+                    isAborted = true;
+                    console.error(`${eventName} Proxy error.`, e);
+                    break;
+                }
+            }
+            if(isAborted) {
+                break;
+            }
+            elem = elem.parentNode;
+        }
+    };
+    on(element, eventName, proxy[EventProxyFnPropery]);
+    return proxy;
+}
+
+function removeEventProxy(eventProxy) {
+    if(!eventProxy) {
+        return;
+    }
+    off(eventProxy[EventProxyElementProperty], eventProxy.eventName, eventProxy[EventProxyFnPropery]);
 }
 
 function appendHtml(elem, html) {
@@ -298,6 +380,24 @@ function saveAs(blob, filename) {
     document.body.removeChild(alink);
 }
 
+function readTextFile(blob, encoding) {
+    return new Promise((resolve, reject) => {
+        if(!blob || !(blob instanceof Blob)) {
+            resolve(null);
+            return;
+        }
+        try {
+            let fileReader = new FileReader();
+            fileReader.addEventListener("load", () => {
+                resolve(fileReader.result);
+            }, false);
+            fileReader.readAsText(blob, encoding || "UTF-8");
+        } catch(e) {
+            reject(e);
+        }
+    });
+}
+
 function convertDataAttr(str) {
     if(isEmpty(str)) {
         return "";
@@ -347,6 +447,8 @@ export {
     off,
     onAnimationStart,
     onAnimationEnd,
+    createEventProxy,
+    removeEventProxy,
     appendHtml,
     replaceHtml,
     html,
@@ -359,6 +461,7 @@ export {
     show,
     hide,
     saveAs,
+    readTextFile,
     convertDataAttr,
     splitText
 };

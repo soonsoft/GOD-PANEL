@@ -432,10 +432,10 @@ function propertyRender(propertyInfo, depMap, scope) {
             let optionGroup = {};
             options.forEach(option => {
                 if(selectValue) {
-                    if(p.value === selectValue) {
-                        p.selected = true;
+                    if(option.value === selectValue) {
+                        option.selected = true;
                     } else {
-                        p.selected = false;
+                        option.selected = false;
                     }
                 }
                 let group = option.group || "NONE";
@@ -563,6 +563,13 @@ function propertyRender(propertyInfo, depMap, scope) {
             htmlBuilder.splice(htmlBuilder.length - 1, 1, `
                 <input id="${propertyId}" type="hidden" value="${value}" />
             `);
+            break;
+        case "color":
+            if(isEmpty(value)) {
+                value = "#0066ff";
+                propertyInfo.value = value;
+            }
+            htmlBuilder.push(`<input id="${propertyId}" type="color" value="${value}"`);
             break;
         default:
             htmlBuilder.push(`<input id="${propertyId}" type="${propertyInfo.type}" value="${value}"`);

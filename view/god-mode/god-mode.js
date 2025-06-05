@@ -1,5 +1,5 @@
 import "./god-mode.css";
-import { ready, appendHtml, on } from "../../src/common";
+import { ready, appendHtml, on, createEventProxy } from "../../src/common";
 import { initModules, onClosed, setModuleDisabled } from "../../src/ui/module-manager";
 import { onLoadingHidden, onLoadingShown, initLoading, hideLoading } from "../../src/ui/loading";
 import { formModule } from "./modules/form-module";
@@ -20,6 +20,9 @@ const godInfo = {
     version: "1.0.0"
 };
 
+const backActionIcon = "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIyNjQiPjxwYXRoIGQ9Ik0xNTYuNjA4IDQ4Ny44NTkyYzEuMTU2MjY3LTEuMTM3MDY3IDIuNjQ4NTMzLTEuNjIyNCAzLjkxODkzMy0yLjU1ODkzM2wzMDYuNjY2NjY3LTMwMS41NjkwNjdjMTMuMTk1NzMzLTEyLjk3MDY2NyAzNC41ODY2NjctMTIuOTcwNjY3IDQ3Ljc4MTMzMyAwIDEzLjE5NDY2NyAxMi45NzgxMzMgMTMuMTk0NjY3IDM0LjAxMzg2NyAwIDQ2Ljk4NzczM0wyNjMuMzAyNCA0NzguMjEwMTMzbDU3OS4yMDMyIDBjMTguOTc4MTMzIDAgMzQuMzYyNjY3IDE1LjEyODUzMyAzNC4zNjI2NjcgMzMuNzg5ODY3IDAgMTguNjYyNC0xNS4zODQ1MzMgMzMuNzkzMDY3LTM0LjM2MjY2NyAzMy43OTMwNjdMMjYzLjMwMjQgNTQ1Ljc5MzA2N2wyNTEuNjcxNDY3IDI0Ny40ODY5MzNjMTMuMTk0NjY3IDEyLjk3MTczMyAxMy4xOTQ2NjcgMzQuMDEwNjY3IDAgNDYuOTg0NTMzLTEzLjE5NDY2NyAxMi45NzQ5MzMtMzQuNTg2NjY3IDEyLjk3NDkzMy00Ny43ODEzMzMgMGwtMzA2LjY2NjY2Ny0zMDEuNTYxNmMtMS4yNjkzMzMtMC45Mzk3MzMtMi43NjI2NjctMS40MjE4NjctMy45MTg5MzMtMi41NjIxMzMtNi4zMzQ5MzMtNi4yMzA0LTkuMjQwNTMzLTE0LjM0MDI2Ny05LjQ3NzMzMy0yMi41MDI0QzE0Ny4zNjc0NjcgNTAyLjIwMDUzMyAxNTAuMjczMDY3IDQ5NC4wOTA2NjcgMTU2LjYwOCA0ODcuODU5MkwxNTYuNjA4IDQ4Ny44NTkyek0xNTYuNjA4IDQ4Ny44NTkyIiBwLWlkPSIyMjY1Ij48L3BhdGg+PC9zdmc+";
+const menuActionIcon = "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjQwMDEiPjxwYXRoIGQ9Ik03MzYgMzUySDI4OGEzMiAzMiAwIDEgMSAwLTY0aDQ0OGEzMiAzMiAwIDAgMSAwIDY0eiBtMCAxOTJIMjg4YTMyIDMyIDAgMSAxIDAtNjRoNDQ4YTMyIDMyIDAgMCAxIDAgNjR6IG0wIDE5MkgyODhhMzIgMzIgMCAwIDEgMC02NGg0NDhhMzIgMzIgMCAwIDEgMCA2NHoiIHAtaWQ9IjQwMDIiPjwvcGF0aD48L3N2Zz4=";
+
 onClosed(() => hideLoading());
 
 function insertGodPanel() {
@@ -37,11 +40,28 @@ function insertGodPanel() {
             </div>
             <div id="godContentPanel">
                 <div id="godPanelSider">
-                    <button id="closeButton"></button>
-                    <span class="god-text">I AM THE GOD PANEL</span>
+                    <div class="top-panel">
+                        <div class="header-ctrl-panel">
+                            <button class="window-button" id="redButton"></button>
+                            <button class="window-button" id="yellowButton"></button>
+                            <button class="window-button" id="greenButton"></button>
+                        </div>
+                        <div class="header-action-panel">
+                            <button id="backAction" disabled>
+                                <img src="${backActionIcon}">
+                            </button>
+                            <button id="menuAction">
+                                <img src="${menuActionIcon}" style="transform:scale3d(1.2, 1.2, 1.2)">
+                            </button>
+                        </div>
+                    </div>
+                    <div class="logo-panel">
+                        <h1 class="god-text"><span>GOD PANEL</span></h1>
+                    </div>
+                    <div id="godMenuPanel"></div>
+                    <div class="bottom-panel"></div>
                 </div>
                 <div id="godPanelContainer">
-                    <div id="godMenuPanel"></div>
                     <div id="godDetailPanel">
                         <div class="content-panel" style="justify-content:center">
                             <h1 class="primary-color" style="text-align:center;">Welcome to the God Panel</h1>
@@ -59,6 +79,9 @@ function insertGodPanel() {
     godInfo.godContentPanel = document.getElementById("godContentPanel");
     godInfo.godMenuPanel = document.getElementById("godMenuPanel");
     godInfo.godDetailPanel = document.getElementById("godDetailPanel");
+
+    godInfo.clickProxy = createEventProxy(godInfo.godContentPanel, "click");
+    godInfo.changeProxy = createEventProxy(godInfo.godContentPanel, "change");
     
     const godPanel = document.getElementById("godPanel");
     const godHandle = document.getElementById("godHandle");
@@ -75,13 +98,14 @@ function insertGodPanel() {
         godPanel.classList.remove("god-panel-show");
         godHandle.classList.add("god-handle-show");
         if(godInfo.app) {
-            setTimeout(() => {
+            requestAnimationFrame(() => {
                 godInfo.app.classList.remove("app-hide");
             }, 320);
         }
     }
 
     if(godPanel && godHandle) {
+        const appDisplayValue = godInfo.app ? godInfo.app.style.display : "block";
         // transitionend, transitionstart, transitioncancel
         on(godPanel, "transitionstart", event => {
             if(!godPanel.classList.contains("god-panel-show")) {
@@ -97,14 +121,25 @@ function insertGodPanel() {
                 }
             }
         });
-        setTimeout(() => godPanelShow());
+        requestAnimationFrame(() => godPanelShow());
 
         on(godHandle, "click", e => godPanelShow());
-
-        const closeButton = document.getElementById("closeButton");
-        if(closeButton) {
-            on(closeButton, "click", e => godPanelHide());
-        }
+        godInfo.clickProxy.on((elem, e) => {
+            let id = elem.id;
+            switch(id) {
+                case "redButton":
+                    godPanelHide();
+                    break;
+                case "yellowButton":
+                    alert(id);
+                    break;
+                case "greenButton":
+                    alert(id);
+                    break;
+                default:
+                    return;
+            }
+        });
     }
 }
 

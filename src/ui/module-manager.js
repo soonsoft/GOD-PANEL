@@ -7,7 +7,7 @@ import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, 
 let context;
 let modules = [];
 let currentMenuId;
-let bodyGroup, backAction;
+let bodyGroup;
 
 // state
 let currentModuleDisabled = false;
@@ -83,12 +83,12 @@ function createActionContext(ctx, scope) {
     return Object.assign(ctx, funcList);
 }
 
-function createCallAction(module, scope) {
+function createCallAction(scopeInfo, scope) {
     return (actionName, param, onSuccess, onError) => {
-        if(!module || !Array.isArray(module.actions)) {
+        if(!scopeInfo || !Array.isArray(scopeInfo.actions)) {
             return;
         }
-        let actionInfo = module.actions.find(b => b.actionName === actionName);
+        let actionInfo = scopeInfo.actions.find(b => b.actionName === actionName);
         let options = {
             onSuccess,
             onError,
@@ -280,20 +280,11 @@ function openPage(moduleId) {
     };
     addScopeInfo(scopeInfo);
 
-    let backActionStyle = "";
-    if(!isEmpty(moduleInfo.description)) {
-        backActionStyle = "margin-top:2px";
-    }
     let elem = `
         <div id="detailContentPanel" class="content-panel content-panel-actived">
-            <section class="header-panel">
-                <div class="action-panel">
-                    <a href="javascript:void(0)" ${htmlCondition(v => !isEmpty(v), backActionStyle, html`style="${0}"`)} class="back-action"></a>
-                </div>
-                <section class="title-panel">
-                    <h1>${moduleInfo.menuText}</h1>
-                    ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
-                </section>
+            <section class="title-panel">
+                <h1>${moduleInfo.menuText}</h1>
+                ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
             </section>
             <section class="body-group">
                 ${detailBodyRender(scopeInfo)}
@@ -311,7 +302,6 @@ function openPage(moduleId) {
     replaceHtml(godDetailPanel, elem);
 
     bodyGroup = godDetailPanel.querySelector(".body-group");
-    backAction = bodyGroup.querySelector("a.back-action");
     scopeInfo.bodyPanel = bodyGroup.querySelector(".body-panel");
     
     onOpend(scopeInfo);
@@ -396,9 +386,10 @@ function showDetailPanel(scopeInfo, contentFn) {
                 });
             });
 
-            // 显示后退按钮
-            if(!backAction?.classList.contains("back-action-show")) {
-                backAction?.classList.add("back-action-show");
+            // 激活后退按钮
+            let backAction = document.getElementById("backAction");
+            if(backAction) {
+                backAction.disabled = false;
             }
         }
     });
@@ -407,15 +398,6 @@ function showDetailPanel(scopeInfo, contentFn) {
 // 关闭子页面
 function hideDetailPanel() {
     return new Promise((resolve, reject) => {
-        // let bodyPanelStack = godInfo.currentModule?.bodyPanelStack;
-        // if(!bodyPanelStack) {
-        //     try {
-        //         reject(new Error("no bodyPanelStack."));
-        //     } catch(e) {
-        //         console.error(e);
-        //     }
-        //     return;
-        // }
         if(getScopeStackSize() <= 1) {
             return;
         }
@@ -436,12 +418,78 @@ function hideDetailPanel() {
                 nextBody.classList.add("move-out");
             });
 
-            // 隐藏后退按钮
-            // if(bodyPanelStack.length <= 1) {
-            //     backAction?.classList.remove("back-action-show");
-            // }
+            if(getScopeStackSize() <= 1) {
+                // 禁用后退按钮
+                let backAction = document.getElementById("backAction");
+                if(backAction) {
+                    backAction.disabled = true;
+                }
+            }
         }
     });
+}
+
+function onMenuItemClick(dt, dl) {
+    let id = dt.dataset.menuId;
+    if(currentMenuId === id) {
+        return;
+    }
+    let module = getCurrentModule(id);
+    if(isEmptyModule(module)) {
+        return;
+    }
+
+    let dtList = dl.getElementsByTagName("dt");
+    for(let i = 0; i < dtList.length; i++) {
+        let dt = dtList[i];
+        if(dt.classList.contains("menu-item-selected")) {
+            dt.classList.remove("menu-item-selected");
+            break;
+        }
+    }
+    closePage(currentMenuId);
+
+    dt.classList.add("menu-item-selected");
+    currentMenuId = id;
+    newScopeStack();
+
+    openPage(id);
+}
+
+function onActionClick(elem) {
+    let scope = elem.dataset.scope;
+    if(isEmpty(scope)) {
+        return;
+    }
+
+    let module = getScopeInfo(scope);
+    if(!module || !Array.isArray(module.actions)) {
+        return;
+    }
+
+    if(elem.tagName === "BUTTON") {
+        let buttonIndex = elem.dataset.buttonIndex;
+        let buttonInfo = module.actions[buttonIndex];
+        if(buttonInfo) {
+            callAction(buttonInfo, module, elem, scope);
+        } else {
+            console.error(`buttonIndex: ${buttonIndex} is not found.`);
+        }
+    }
+
+    if(elem.tagName === "A") {
+        let actionName = elem.dataset.actionName;
+        if(isEmpty(actionName)) {
+            console.warn("actionName is empty.");
+            return;
+        }
+        let buttonInfo = module.actions.find(b => b.actionName === actionName);
+        if(buttonInfo) {
+            callAction(buttonInfo, module, elem, scope);
+        } else {
+            console.error(`actionName: ${actionName} is not found.`);
+        }
+    }
 }
 
 function initModules(moduleList, ctx) {
@@ -516,100 +564,61 @@ function initModules(moduleList, ctx) {
     appendHtml(godMenuPanel, htmlBuilder.join(""));
 
     const dl = godMenuPanel.getElementsByTagName("dl")[0];
-    if(dl) {
-        // 注册事件
-        on(dl, "click", e => {
-            let elem = e.target;
-            while(elem.tagName !== 'DT') {
-                if(elem.tagName === "DL" || elem.id === "godMenuPanel") {
-                    return;
-                }
-                if(elem.classList.contains("extend-button")) {
-                    switchSubMenu(elem);
-                    return;
-                }
-                elem = elem.parentNode;
-            }
-
-            let id = elem.dataset.menuId;
-            if(currentMenuId === id) {
-                return;
-            }
-            let module = getCurrentModule(id);
-            if(isEmptyModule(module)) {
-                return;
-            }
-
-            let dtList = dl.getElementsByTagName("dt");
-            for(let i = 0; i < dtList.length; i++) {
-                let dt = dtList[i];
-                if(dt.classList.contains("menu-item-selected")) {
-                    dt.classList.remove("menu-item-selected");
-                    break;
-                }
-            }
-            closePage(currentMenuId);
-
-            elem.classList.add("menu-item-selected");
-            currentMenuId = id;
-            newScopeStack();
-
-            openPage(id);
-        });
-    }
-
-    on(godDetailPanel, "click", e => {
+    context.clickProxy.on((elem, e, setBehavior) => {
         if(currentModuleDisabled) {
             return;
         }
-        let elem = e.target;
-        while(elem.tagName !== 'BUTTON' && elem.tagName !== "A") {
-            if(elem.id === "godDetailPanel") {
-                return;
-            }
-            elem = elem.parentNode;
+
+        function done() {
+            setBehavior({
+                hitting: true,
+                aborting: true
+            });
         }
 
-        if(elem.classList.contains("back-action")) {
+        if(elem.id === "backAction") {
+            done();
             hideDetailPanel();
             return;
         }
 
-        let scope = elem.dataset.scope;
-        let module = getScopeInfo(scope);
-        if(!module || !Array.isArray(module.actions)) {
+        if(elem.id === "menuAction") {
+            done();
             return;
         }
 
-        if(elem.tagName === "BUTTON") {
-            let buttonIndex = elem.dataset.buttonIndex;
-            let buttonInfo = module.actions[buttonIndex];
-            if(buttonInfo) {
-                callAction(buttonInfo, module, elem, scope);
-            } else {
-                console.error(`buttonIndex: ${buttonIndex} is not found.`);
-            }
+        if(elem.classList.contains("extend-button")) {
+            done();
+            switchSubMenu(elem);
+            return;
         }
 
-        if(elem.tagName === "A") {
-            let actionName = elem.dataset.actionName;
-            if(isEmpty(actionName)) {
-                console.warn("actionName is empty.");
-                return;
-            }
-            let buttonInfo = module.actions.find(b => b.actionName === actionName);
-            if(buttonInfo) {
-                callAction(buttonInfo, module, elem, scope);
-            } else {
-                console.error(`actionName: ${actionName} is not found.`);
-            }
+        if(dl && elem.tagName === "DT") {
+            done();
+            onMenuItemClick(elem, dl);
+            return;
+        }
+
+        if(elem.tagName === 'BUTTON' || elem.tagName === "A") {
+            done();
+            onActionClick(elem);
+            return;
         }
     });
 
-    on(godDetailPanel, "change", e => {
-        let elem = e.target;
-        const value = elem.value;
+    context.changeProxy.on((elem, e, setBehavior) => {
+        if(isEmpty(elem.id)) {
+            return;
+        }
+        
         const propertyId = parsePropertyId(elem.id);
+        if(isEmpty(propertyId.scope)) {
+            return;
+        }
+        setBehavior({
+            hitting: true,
+            aborting: true
+        });
         const scope = propertyId.scope;
         const propertyName = propertyId.id;
         const scopeInfo = getScopeInfo(scope);
@@ -620,6 +629,7 @@ function initModules(moduleList, ctx) {
             properties = scopeInfo.properties;
         }
         if(properties) {
+            const value = elem.value;
             for(let i = 0; i < properties.length; i++) {
                 let propertyInfo = properties[i];
                 if(propertyInfo.id === propertyName) {
