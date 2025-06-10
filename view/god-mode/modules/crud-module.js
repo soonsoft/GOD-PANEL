@@ -167,20 +167,19 @@ const crudModule = {
                     actions: [
                         {
                             text: "保存",
-                            action: childCtx => {
+                            action: async childCtx => {
                                 if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }
+
                                 let data = childCtx.getCurrentViewModel();
                                 rowData.name = data.name;
                                 rowData.userName = data.userName;
                                 rowData.roleName = data.roleName;
                                 rowData.status = data.status;
-                                childCtx
-                                    .hideDetailPanel()
-                                    .then(() => {
-                                        ctx.callAction("query");
-                                    });
+
+                                await childCtx.hideDetailPanel();
+                                ctx.callAction("query");
                             }
                         },
                         {
@@ -214,17 +213,14 @@ const crudModule = {
                     actions: [
                         {
                             text: "保存",
-                            action: childCtx => {
+                            action: async childCtx => {
                                 if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }
                                 let data = childCtx.getCurrentViewModel();
                                 saveData(data);
-                                childCtx
-                                    .hideDetailPanel()
-                                    .then(() => {
-                                        ctx.callAction("query");
-                                    });
+                                await childCtx.hideDetailPanel()
+                                ctx.callAction("query");
                             }
                         },
                         {

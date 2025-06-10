@@ -1,4 +1,4 @@
-import { generateId, html, htmlCondition, isEmpty, isFunction, convertDataAttr } from "../common";
+import { generateId, html, htmlCondition, isEmpty, isFunction, convertDataAttr, appendHtml, onAnimationEnd, hide } from "../common";
 import { resultRender, createPropertyId } from "./module-scope";
 
 function createLinkButton(actionName, text, param) {
@@ -592,6 +592,11 @@ function propertyRender(propertyInfo, depMap, scope) {
     return htmlBuilder.join("");
 }
 
+/**
+ * 分页按钮
+ * @param {*} option { pageIndex, pageCount, pageSize }
+ * @returns 
+ */
 function pageButtonRender(option) {
     let pageIndex = option.pageIndex || 1;
     let pageCount = option.pageCount || 0;
@@ -713,6 +718,59 @@ function editorRender(properties, layout) {
     `);
 }
 
+function showToast(globalContext = null, message = "", options) {
+    if(typeof globalContext === "string") {
+        [message, options] = arguments;
+        globalContext = null;
+    }
+
+    if(!globalContext) {
+        return;
+    }
+
+    function appendMessage(message) {
+        return `
+            <li>
+                <p>${message}</p>
+            </li>
+        `;
+    }
+
+    let toastInfo = globalContext.toastInfo;
+    if(toastInfo) {
+        let ul = toastInfo.toastPanel.querySelector("ul");
+        let children = ul.children;
+        if(children.length >= 5) {
+            children[0].remove();
+        }
+        appendHtml(ul, appendMessage(message));
+    } else {
+        let htmlBuilder = ['<div class="toast-panel">'];
+        htmlBuilder.push('<ul>');
+        htmlBuilder.push(appendMessage(message));
+        htmlBuilder.push('</ul>');
+        htmlBuilder.push('</div>');
+        let godPanel = globalContext.godPanel;
+        appendHtml(godPanel, htmlBuilder.join(""));
+        globalContext.toastInfo = toastInfo = {
+            toastPanel: godPanel.querySelector(".toast-panel")
+        };
+        requestAnimationFrame(() => toastInfo.toastPanel.classList.add("toast-in"));
+    }
+    if(toastInfo.timeoutHandler) {
+        clearTimeout(toastInfo.timeoutHandler);
+    }
+    toastInfo.timeoutHandler = setTimeout(() => {
+        globalContext.toastInfo = null;
+        onAnimationEnd(toastInfo.toastPanel, () => {
+            if(toastInfo.toastPanel.classList.contains("toast-out")) {
+                toastInfo.toastPanel.remove();
+            }
+        }, true);
+        toastInfo.toastPanel.classList.add("toast-out");
+    }, 5000);
+}
+
 export {
     createLinkButton,
     jsonRender,
@@ -720,5 +778,6 @@ export {
     pageButtonRender,
     imageRender,
     cardRender,
-    propertyRender
+    propertyRender,
+    showToast
 };

@@ -13,6 +13,12 @@ const loadingModule = {
             action: ctx => {
                 showLoading();
             }
+        },
+        {
+            text: "Toast",
+            action: ctx => {
+                ctx.toast("我是测试用的Message信息");
+            }
         }
     ]
 };

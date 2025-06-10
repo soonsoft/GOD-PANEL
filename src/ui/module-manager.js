@@ -2,7 +2,7 @@ import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, 
 import { addEventListener, dispatchEvent } from "../event";
 import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
-import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender } from "./panel-ui"
+import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender, showToast } from "./panel-ui"
 
 let context;
 let modules = [];
@@ -79,6 +79,9 @@ function createActionContext(ctx, scope) {
         cardRender: wrapFunctionWithContext(cardRender, ctx, scope),
         pageButtonRender: wrapFunctionWithContext(pageButtonRender, ctx, scope),
         propertyRender: wrapFunctionWithContext(propertyRender, ctx, scope),
+        toast: (title, message, options) => {
+            showToast(context, title, message, options);
+        }
     };
     return Object.assign(ctx, funcList);
 }
@@ -113,7 +116,7 @@ function callAction(actionInfo, module, elem, scope, options = {}) {
         try {
             let result = actionInfo.action(createActionContext({
                 element: elem,
-                callAction: createCallAction(module),
+                callAction: createCallAction(module, scope),
                 module,
                 actionInfo,
                 param: options.param
@@ -462,6 +465,7 @@ function onActionClick(elem) {
         return;
     }
 
+    scope = parseInt(scope);
     let module = getScopeInfo(scope);
     if(!module || !Array.isArray(module.actions)) {
         return;
@@ -499,7 +503,7 @@ function initModules(moduleList, ctx) {
     let godDetailPanel = context.godDetailPanel;
 
     function menuItemRender(menuItem, id, level) {
-        let marginLeft = 8 + 40 * level;
+        let marginLeft = 8 + 16 * level;
         menuItem.id = id;
         return `
             <dt data-menu-id="${id}">
@@ -584,6 +588,7 @@ function initModules(moduleList, ctx) {
 
         if(elem.id === "menuAction") {
             done();
+            alert(elem.id);
             return;
         }
 

@@ -1,5 +1,5 @@
 import "./god-mode.css";
-import { ready, appendHtml, on, createEventProxy } from "../../src/common";
+import { ready, appendHtml, on, createEventProxy, onAnimationStart, onAnimationEnd } from "../../src/common";
 import { initModules, onClosed, setModuleDisabled } from "../../src/ui/module-manager";
 import { onLoadingHidden, onLoadingShown, initLoading, hideLoading } from "../../src/ui/loading";
 import { formModule } from "./modules/form-module";
@@ -85,6 +85,7 @@ function insertGodPanel() {
     
     const godPanel = document.getElementById("godPanel");
     const godHandle = document.getElementById("godHandle");
+    godInfo.godPanel = godPanel;
 
     function godPanelShow() {
         godPanel.classList.add("god-panel-show");
@@ -106,15 +107,14 @@ function insertGodPanel() {
 
     if(godPanel && godHandle) {
         const appDisplayValue = godInfo.app ? godInfo.app.style.display : "block";
-        // transitionend, transitionstart, transitioncancel
-        on(godPanel, "transitionstart", event => {
+        onAnimationStart(godPanel, event => {
             if(!godPanel.classList.contains("god-panel-show")) {
                 if(godInfo.app) {
                     godInfo.app.style.display = appDisplayValue;
                 }
             }
         });
-        on(godPanel, "transitionend", event => {
+        onAnimationEnd(godPanel, event => {
             if(godPanel.classList.contains("god-panel-show")) {
                 if(godInfo.app) {
                     godInfo.app.style.display = "none";

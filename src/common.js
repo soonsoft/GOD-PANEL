@@ -118,24 +118,24 @@ function off(element, eventName, eventFn) {
 function onAnimationStart(element, eventFn, once) {
     let listener = event => {
         if(once) {
-            off(element, "animationstart", listener);
+            off(element, "transitionstart", listener);
         }
         if(isFunction(eventFn)) {
             eventFn(event);
         }
     };
-    on(element, "animationstart", listener);
+    on(element, "transitionstart", listener);
 }
 function onAnimationEnd(element, eventFn, once) {
     let listener = event => {
         if(once) {
-            off(element, "animationend", listener);
+            off(element, "transitionend", listener);
         }
         if(isFunction(eventFn)) {
             eventFn(event);
         }
     };
-    on(element, "animationend", listener);
+    on(element, "transitionend", listener);
 }
 
 function createEventProxy(element, eventName) {
@@ -362,11 +362,11 @@ function hide(element) {
     if(!element) {
         return;
     }
-    let displayValue = window.getComputedStyle(element).display;
+    let displayValue = getComputedStyle(element).display;
     if(displayValue === "none") {
         return;
     }
-    displayValue.setAttribute("tmp_display", displayValue);
+    element.setAttribute("tmp_display", displayValue);
     element.style.display = "none";
 }
 
