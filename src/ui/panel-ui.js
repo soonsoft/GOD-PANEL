@@ -569,7 +569,7 @@ function propertyRender(propertyInfo, depMap, scope) {
                 value = "#0066ff";
                 propertyInfo.value = value;
             }
-            htmlBuilder.push(`<input id="${propertyId}" type="color" value="${value}"`);
+            htmlBuilder.push(`<input id="${propertyId}" type="color" value="${value}" />`);
             break;
         default:
             htmlBuilder.push(`<input id="${propertyId}" type="${propertyInfo.type}" value="${value}"`);
@@ -745,7 +745,8 @@ function showToast(globalContext = null, message = "", options) {
         }
         appendHtml(ul, appendMessage(message));
     } else {
-        let htmlBuilder = ['<div class="toast-panel">'];
+        let toastId = `toast_${generateId()}`;
+        let htmlBuilder = [`<div id="${toastId}" class="toast-panel">`];
         htmlBuilder.push('<ul>');
         htmlBuilder.push(appendMessage(message));
         htmlBuilder.push('</ul>');
@@ -753,7 +754,7 @@ function showToast(globalContext = null, message = "", options) {
         let godPanel = globalContext.godPanel;
         appendHtml(godPanel, htmlBuilder.join(""));
         globalContext.toastInfo = toastInfo = {
-            toastPanel: godPanel.querySelector(".toast-panel")
+            toastPanel: document.getElementById(toastId)
         };
         requestAnimationFrame(() => toastInfo.toastPanel.classList.add("toast-in"));
     }
@@ -761,13 +762,13 @@ function showToast(globalContext = null, message = "", options) {
         clearTimeout(toastInfo.timeoutHandler);
     }
     toastInfo.timeoutHandler = setTimeout(() => {
-        globalContext.toastInfo = null;
         onAnimationEnd(toastInfo.toastPanel, () => {
             if(toastInfo.toastPanel.classList.contains("toast-out")) {
                 toastInfo.toastPanel.remove();
             }
         }, true);
         toastInfo.toastPanel.classList.add("toast-out");
+        globalContext.toastInfo = null;
     }, 5000);
 }
 

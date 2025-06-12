@@ -33,25 +33,21 @@ function insertGodPanel() {
 
     const template = `
         <div id="godPanel" class="god-panel-default">
-            <div id="godBackground">
-                <div class="rectangle element2"></div>
-                <div class="rectangle element1"></div>
-                <div class="rectangle element3"></div>
-            </div>
+            <div id="godBackground"></div>
             <div id="godContentPanel">
                 <div id="godPanelSider">
                     <div class="top-panel">
                         <div class="header-ctrl-panel">
-                            <button class="window-button" id="redButton"></button>
-                            <button class="window-button" id="yellowButton"></button>
-                            <button class="window-button" id="greenButton"></button>
+                            <button class="window-button" id="redButton" type="button" title="关闭"></button>
+                            <button class="window-button" id="yellowButton" type="button" title="缩小"></button>
+                            <button class="window-button" id="greenButton" type="button" title="放大"></button>
                         </div>
                         <div class="header-action-panel">
-                            <button id="backAction" disabled>
-                                <img src="${backActionIcon}">
+                            <button id="backAction" type="button" title="后退" disabled>
+                                <img src="${backActionIcon}" alt="">
                             </button>
-                            <button id="menuAction">
-                                <img src="${menuActionIcon}" style="transform:scale3d(1.2, 1.2, 1.2)">
+                            <button id="menuAction" type="button" title="菜单">
+                                <img src="${menuActionIcon}" style="transform:scale3d(1.2, 1.2, 1.2)" alt="">
                             </button>
                         </div>
                     </div>

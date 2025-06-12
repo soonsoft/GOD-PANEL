@@ -1,4 +1,4 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd } from "../common";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
 import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
@@ -50,16 +50,19 @@ function createActionContext(ctx, scope) {
     ctx.godInfo = context;
     let funcList = {
         getCurrentViewModel: () => {
-            return getCurrentViewModel(null, ctx.scope);
+            return getCurrentViewModel(null, scope);
         },
         checkCurrentViewModel: () => {
-            return checkCurrentViewModel(null, ctx.scope);
+            return checkCurrentViewModel(null, scope);
         },
         getPropertyValue: (propertyName) => {
-            return getPropertyValue(propertyName, ctx.scope);
+            return getPropertyValue(propertyName, scope);
         },
         setPropertyValue: (propertyName, value) => {
-            return setPropertyValue(propertyName, value, ctx.scope);
+            setPropertyValue(propertyName, value, scope);
+        },
+        updatePropertyInfo: (propertyName, setterFn) => {
+            updatePropertyInfo(propertyName, setterFn, scope);
         },
         showDetailPanel,
         hideDetailPanel,
@@ -212,36 +215,52 @@ function checkCurrentViewModel(properties, scope) {
     return result;
 }
 
-function getPropertyValue(propertyName, scope) {
+function eachPropertiesByName(propertyName, scope, fn) {
     let scopeInfo = getScopeInfo(scope || 0);
     let properties = scopeInfo.properties;
     if(Array.isArray(properties)) {
         for(let i = 0; i < properties.length; i++) {
             let propertyInfo = properties[i];
-            if(propertyInfo.name === propertyName) {
-                return propertyInfo.value;
+            if(propertyInfo.id === propertyName) {
+                return fn(propertyInfo);
             }
         }
     }
-    return null;
+}
+
+function propertiesRender(scopeInfo) {
+    let properties = scopeInfo.properties;
+    let scope = scopeInfo.scope;
+    let container = scopeInfo.bodyPanel.querySelector(".body-container");
+    let formPanel = container.querySelector(".form-panel");
+    replaceHtml(formPanel, formRender(properties, scope));
+}
+
+function getPropertyValue(propertyName, scope) {
+    return eachPropertiesByName(propertyName, scope, p => p.value) || null;
 }
 function setPropertyValue(propertyName, value, scope) {
-    let scopeInfo = getScopeInfo(scope || 0);
-    let properties = scopeInfo.properties;
-    if(!properties) {
-        return;
-    }
-    let propertyId = parsePropertyId(propertyName);
-    for(let i = 0; i < properties.length; i++) {
-        let propertyInfo = properties[i];
-        if(propertyInfo.id === propertyId) {
-            propertyInfo.value = value;
-            if(isFunction(propertyInfo.updatePropertyElement)) {
-                propertyInfo.updatePropertyElement(value);
-            }
-            break;
+    eachPropertiesByName(propertyName, scope, propertyInfo => {
+        propertyInfo.value = value;
+        if(isFunction(propertyInfo.updatePropertyElement)) {
+            propertyInfo.updatePropertyElement(value);
         }
-    }
+    });
+}
+
+function updatePropertyInfo(propertyName, setterFn, scope) {
+    let scopeInfo = getScopeInfo(scope || 0);
+    eachPropertiesByName(propertyName, scope, propertyInfo => {
+        setterFn(propertyInfo);
+        if(!scopeInfo.updatePropertiesKey) {
+            scopeInfo.updatePropertiesKey = setNextTick(() => {
+                propertiesRender(scopeInfo);
+                console.log(`run tick ${scopeInfo.updatePropertiesKey}`);
+                scopeInfo.updatePropertiesKey = undefined;
+            });
+            console.log(`add tick ${scopeInfo.updatePropertiesKey}`);
+        }
+    });
 }
 
 //#endregion
@@ -417,8 +436,11 @@ function hideDetailPanel() {
             nextBody.addEventListener("transitionend", nextTransitionendFn, false);
             currentBody.style.display = "flex";
             requestAnimationFrame(() => {
-                currentBody.classList.remove("move-hide");
                 nextBody.classList.add("move-out");
+                // 兼容 Firefox，Firefox需要分两二帧
+                requestAnimationFrame(() => {
+                    currentBody.classList.remove("move-hide");
+                });
             });
 
             if(getScopeStackSize() <= 1) {

@@ -2,6 +2,33 @@ let idValue = 0;
 const EventProxyFnPropery = Symbol("proxyFn");
 const EventProxyElementProperty = Symbol("proxyElement");
 
+const microTask = {
+    taskList: [],
+    status: "pending",
+    run: () => runTask(microTask)
+};
+const macroTask = {
+    taskList: [],
+    status: "pending",
+    run: () => runTask(macroTask)
+};
+
+function runTask(task) {
+    while(task.taskList.length > 0) {
+        task.status = "running";
+        let taskList = task.taskList;
+        task.taskList = [];
+        for(let i = 0; i < taskList.length; i++) {
+            try {
+                taskList[i]();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    }
+    task.status = "pending";
+}
+
 function loadJS(src, callback) {
     const script = document.createElement("script");
     script.onload = callback;
@@ -321,8 +348,36 @@ function previousElement(elem) {
     return next;
 }
 
-function nextTick(fn) {
-    return setTimeout(fn);
+/**
+ * 注册异步任务
+ * @param {*} fn 任务函数
+ * @param {*} type 配置 micro - 微任务，macro - 宏任务
+ * @returns 
+ */
+function setNextTick(fn, type) {
+    if(!isFunction(fn)) {
+        throw new TypeError("the arguments fn is not a function");
+    }
+
+    let task = type === "macro" ? macroTask : microTask;
+    task.taskList.push(fn);
+    if(task.status === "pending") {
+        if(task === microTask) {
+            Promise.resolve().then(task.run);
+        } else {
+            if(isFunction(setImmediate)) {
+                setImmediate(task.run);
+            } else {
+                setTimeout(task.run);
+            }
+        }
+        task.status = "waitting";
+    }
+    return `type::${task.taskList.length - 1}`;
+}
+
+function clearNextTick(key) {
+
 }
 
 function generateId() {
@@ -456,7 +511,8 @@ export {
     parentElement,
     previousElement,
     nextElement,
-    nextTick,
+    setNextTick,
+    clearNextTick,
     generateId,
     show,
     hide,

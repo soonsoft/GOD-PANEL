@@ -1,6 +1,5 @@
 :root {
-    /* --background-image: url(https://wowtabextension.blob.core.windows.net/wowtabwallpapers/2024-06-21.jpg); */
-    --background-image: linear-gradient(90deg, rgb(0, 98, 255), rgb(66, 212, 241), rgb(250, 227, 129));
+    --background-image: linear-gradient(90deg, rgb(0, 98, 255), rgb(66, 212, 241), rgb(174, 126, 237));
     --logo-color: linear-gradient(90deg, rgb(50, 127, 252), rgb(66, 212, 241), rgb(253, 78, 250));
     --primary-color: rgb(0, 98, 255);
     --font-color: #000000;
@@ -18,7 +17,9 @@
     --textbox-border-color: #666666;
     --basic-bg-color: #ffffff;
     --basic-ft-Color: #000000;
-    --toast-bg-color: rgba(255, 255, 255, .7);
+    --toast-bg-color: rgba(255, 255, 255, .3);
+    --panel-glass-border-color: linear-gradient(155deg, rgba(255,255,255,1) 0%, rgba(255,0,255,0) 50%, rgba(255,255,255,1) 90%);
+    --panel-glass-mask-color: linear-gradient(#ffffff 0 0);
 }
 
 .app-default {
@@ -165,6 +166,12 @@ div.loading-show {
     }
 }
 
+@keyframes rotateGradient {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 #godPanel {
     width: 100%;
     height: 100%;
@@ -186,12 +193,40 @@ div.loading-show {
         background-position: center;
         background-repeat: no-repeat;
         overflow: hidden;
+        backdrop-filter: blur(10px);
 
         & .rectangle {
             width: 100vh;
             height: 100vh;
             border-radius: 40%;
         }
+    }
+
+    & > #godBackground::before {
+        content: "";
+        position: absolute;
+        /*
+        top: -100%;
+        left: -100%;
+        width: 300%;
+        height: 300%;
+        background: 
+            radial-gradient(circle at 90% 20%, rgba(253, 78, 250, 1), transparent 35%),
+            radial-gradient(circle at 10% 90%, rgba(66, 212, 241, 1), transparent 40%),
+            radial-gradient(circle at 90% 90%, rgb(247, 174, 4), transparent 45%),
+            radial-gradient(circle at 50% 50%, rgb(194, 200, 252), transparent 60%);
+        animation: rotateGradient 30s linear infinite;
+        */
+        inset: 0;
+        background: 
+            radial-gradient(ellipse at 0% 0%, rgba(66, 212, 241, .9), transparent 70%),
+            radial-gradient(ellipse at 50% 50%, rgba(253, 78, 250, 1), transparent 60%),
+            radial-gradient(ellipse at 100% 100%, rgba(250, 227, 129, .8), transparent 70%);
+        /* 
+        animation: rotateGradient 100s linear infinite;
+        filter: blur(50px);
+        */
+        z-index: -1;
     }
 
     & > #godContentPanel {
@@ -226,20 +261,20 @@ div.loading-show {
                     justify-content: left;
                     align-items: center;
                     flex: 0 0 100px;
-                    column-gap: 10px;
+                    column-gap: 8px;
                     height: 100%;
                     overflow: hidden;
+                    padding-left: 10px;
 
                     & .window-button {
-                        width: 14px;
-                        height: 14px;
+                        width: 12px;
+                        height: 12px;
                         overflow: hidden;
                         border: 0;
                         border-radius: 50%;
                     }
 
                     & #redButton {
-                        margin-left: 10px;
                         background-color: rgb(255, 95, 87);
                     }
 
@@ -291,7 +326,8 @@ div.loading-show {
                     border-radius: 8px;
                     overflow: hidden;
                     box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .3);
-                    background-color: var(--panel-color);
+                    background-color: rgba(255,255,255,.1);
+                    position: relative;
 
                     span {
                         color: transparent;
@@ -303,6 +339,23 @@ div.loading-show {
                         font-weight: bold;
                         vertical-align: top;
                     }
+                }
+
+                & .god-text::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    padding: 1px;
+                    background: var(--panel-glass-border-color);
+                    mask: 
+                        var(--panel-glass-mask-color) content-box, 
+                        var(--panel-glass-mask-color);
+                    -webkit-mask: 
+                        var(--panel-glass-mask-color) content-box, 
+                        var(--panel-glass-mask-color);
+                    mask-composite: exclude;
+                    border-radius: 8px;
+                    z-index: -1;
                 }
             }
 
@@ -413,6 +466,23 @@ div.loading-show {
                     background-color: var(--menu-item-selected-color) !important;
                     opacity: 1;
                     box-shadow: 0 2px 5px 0 rgba(0, 0, 0, .4);
+                }
+
+                & dt.menu-item-selected > b::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    padding: 1px;
+                    background: var(--panel-glass-border-color);
+                    mask: 
+                        var(--panel-glass-mask-color) content-box, 
+                        var(--panel-glass-mask-color);
+                    -webkit-mask: 
+                        var(--panel-glass-mask-color) content-box, 
+                        var(--panel-glass-mask-color);
+                    mask-composite: exclude;
+                    border-radius: 6px;
+                    z-index: -1;
                 }
 
                 & dd {
@@ -1017,10 +1087,27 @@ div.loading-show {
         }
     }
 
+    & #godContentPanel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        background: var(--panel-glass-border-color);
+        mask: 
+            var(--panel-glass-mask-color) content-box, 
+            var(--panel-glass-mask-color);
+        -webkit-mask: 
+            var(--panel-glass-mask-color) content-box, 
+            var(--panel-glass-mask-color);
+        mask-composite: exclude;
+        border-radius: 10px;
+        z-index: -1;
+    }
+
     & .toast-panel {
         position: fixed;
         background-color: var(--toast-bg-color);
-        backdrop-filter: blur(20px);
+        backdrop-filter: blur(10px);
         width: 30vw;
         max-height: 50vh;
         border-radius: 16px;
@@ -1052,6 +1139,22 @@ div.loading-show {
         }
     }
 
+    & .toast-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: 1px;
+        background: var(--panel-glass-border-color);
+        mask: 
+            var(--panel-glass-mask-color) content-box, 
+            var(--panel-glass-mask-color);
+        -webkit-mask: 
+            var(--panel-glass-mask-color) content-box, 
+            var(--panel-glass-mask-color);
+        mask-composite: exclude;
+        border-radius: 16px;
+    }
+
     & .toast-in {
         opacity: 1;
         transform: translate3d(0, 48px, 0);
@@ -1073,56 +1176,3 @@ div.god-panel-show {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
 }
-
-@keyframes element1 {
-    0% { transform: rotate(30deg) }
-    50% { transform: rotate(360deg) }
-    100% { transform: rotate(30deg) }
-}
-
-#godPanel > #godBackground .element1 {
-    background: linear-gradient(90deg, rgb(253, 115, 203), rgb(129, 165, 250));
-    width: 160vh;
-    height: 160vh;
-    top: -30vh;
-    left: -120vh;
-    position: absolute;
-    opacity: .7;
-    /* animation: element1 180s linear infinite; */
-}
-
-@keyframes element2 {
-    0% { transform: rotate(60deg); }
-    50% { transform: rotate(360deg); }
-    100% { transform: rotate(60deg); }
-}
-
-#godPanel > #godBackground .element2 {
-    background: linear-gradient(180deg, rgb(248, 235, 194), rgb(129, 238, 250), rgb(129, 195, 252));
-    width: 220vh;
-    height: 220vh;
-    top: -60vh;
-    left: -160vh;
-    position: absolute;
-    opacity: .9;
-    /* animation: element2 200s linear infinite; */
-}
-
-@keyframes element3 {
-    0% { transform: rotate(40deg);}
-    50% { transform: rotate(360deg); }
-    100% { transform: rotate(40deg);}
-}
-
-#godPanel > #godBackground .element3 {
-    background: linear-gradient(240deg, rgb(247, 155, 43), rgb(244, 195, 126));
-    width: 200vh;
-    height: 200vh;
-    top: -80vh;
-    right: -140vh;
-    position: absolute;
-    opacity: .8;
-    /* animation: element3 150s linear infinite; */
-    
-}
-
