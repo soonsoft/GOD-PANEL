@@ -101,6 +101,49 @@ function insertGodPanel() {
         }
     }
 
+    function switchFullScreen() {
+        function isFullscreen() {
+            return !!(
+                document.fullscreenElement ||
+                document.mozFullScreenElement ||
+                document.webkitFullscreenElement ||
+                document.msFullscreenElement
+            );
+        }
+
+        // 开启全屏（针对特定元素，通常用 document.documentElement 表示整个页面）
+        function openFullscreen(element = document.documentElement) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.mozRequestFullScreen) { // Firefox
+                element.mozRequestFullScreen();
+            } else if (element.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                element.webkitRequestFullscreen();
+            } else if (element.msRequestFullscreen) { // IE/Edge
+                element.msRequestFullscreen();
+            }
+        }
+
+        // 退出全屏
+        function closeFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        if(isFullscreen()) {
+            closeFullscreen();
+        } else {
+            openFullscreen();
+        }
+    }
+
     if(godPanel && godHandle) {
         const appDisplayValue = godInfo.app ? godInfo.app.style.display : "block";
         onAnimationStart(godPanel, event => {
@@ -130,7 +173,7 @@ function insertGodPanel() {
                     alert(id);
                     break;
                 case "greenButton":
-                    alert(id);
+                    switchFullScreen();
                     break;
                 default:
                     return;

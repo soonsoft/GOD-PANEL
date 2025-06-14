@@ -2,6 +2,9 @@
 const renderModule = {
     menuText: "显示结果集",
     icon: "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgc3R5bGU9IndpZHRoOiAxZW07aGVpZ2h0OiAxZW07dmVydGljYWwtYWxpZ246IG1pZGRsZTtmaWxsOiBjdXJyZW50Q29sb3I7b3ZlcmZsb3c6IGhpZGRlbjsiIHZpZXdCb3g9IjAgMCAxMDI0IDEwMjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwLWlkPSI3NDkyIj48cGF0aCBkPSJNMTI4IDExNy4zMzMzMzNBOTYgOTYgMCAwIDAgMzIgMjEzLjMzMzMzM3Y1OTcuMzMzMzM0QTk2IDk2IDAgMCAwIDEyOCA5MDYuNjY2NjY3aDc2OEE5NiA5NiAwIDAgMCA5OTIgODEwLjY2NjY2N1YyMTMuMzMzMzMzQTk2IDk2IDAgMCAwIDg5NiAxMTcuMzMzMzMzSDEyOHogbTEwLjY2NjY2NyAyMzQuNjY2NjY3di0xMjhoNzQ2LjY2NjY2NnYxMjhIMTM4LjY2NjY2N3ogbTAgMjEzLjMzMzMzM3YtMTA2LjY2NjY2NmgxNzAuNjY2NjY2djEwNi42NjY2NjZoLTE3MC42NjY2NjZ6IG0yNzcuMzMzMzMzIDB2LTEwNi42NjY2NjZoMTkydjEwNi42NjY2NjZoLTE5MnogbTI5OC42NjY2NjcgMHYtMTA2LjY2NjY2NmgxNzAuNjY2NjY2djEwNi42NjY2NjZoLTE3MC42NjY2NjZ6IG0tNTc2IDIzNC42NjY2Njd2LTEyOGgxNzAuNjY2NjY2djEyOGgtMTcwLjY2NjY2NnogbTI3Ny4zMzMzMzMgMHYtMTI4aDE5MnYxMjhoLTE5MnogbTI5OC42NjY2NjcgMHYtMTI4aDE3MC42NjY2NjZ2MTI4aC0xNzAuNjY2NjY2eiIgZmlsbD0iIzAwMDAwMCIgcC1pZD0iNzQ5MyI+PC9wYXRoPjwvc3ZnPg==",
+    onOpened: ctx => {
+        ctx.callAction("showView");
+    },
     properties: [
         { 
             id: "viewMode", 
@@ -21,6 +24,7 @@ const renderModule = {
     actions: [
         {
             text: "显示视图",
+            actionName: "showView",
             action: ctx => {
                 if(ctx.checkCurrentViewModel().invalid(v => ctx.jsonRender(v.messages))) {
                     return;

@@ -15,7 +15,7 @@ let currentModuleDisabled = false;
 function isEmptyModule(module) {
     return (!Array.isArray(module.properties) || module.properties.length === 0)
         && (!Array.isArray(module.actions) || module.actions.length === 0)
-        && !isFunction(module.onOpend);
+        && !isFunction(module.onOpened);
 }
 
 function setModuleDisabled(value) {
@@ -267,7 +267,7 @@ function updatePropertyInfo(propertyName, setterFn, scope) {
 
 //#region events
 
-function onOpend(module) {
+function onOpened(module) {
     if(isFunction(module)) {
         addEventListener("module-opened", module);
     } else {
@@ -296,7 +296,7 @@ function openPage(moduleId) {
         layout: moduleInfo.layout,
         properties: moduleInfo.properties,
         actions: moduleInfo.actions,
-        onOpend: moduleInfo.onOpend,
+        onOpened: moduleInfo.onOpened,
         onClosed: moduleInfo.onClosed,
         depMap: new Map()
     };
@@ -326,7 +326,7 @@ function openPage(moduleId) {
     bodyGroup = godDetailPanel.querySelector(".body-group");
     scopeInfo.bodyPanel = bodyGroup.querySelector(".body-panel");
     
-    onOpend(scopeInfo);
+    onOpened(scopeInfo);
 }
 
 // 关闭页面
@@ -563,10 +563,10 @@ function initModules(moduleList, ctx) {
             });
         }
     });
-    onOpend(module => {
-        if(isFunction(module.onOpend)) {
+    onOpened(module => {
+        if(isFunction(module.onOpened)) {
             let scope = 0;
-            module.onOpend(createActionContext({
+            module.onOpened(createActionContext({
                 module,
                 callAction: createCallAction(module, scope)
             }, scope));
@@ -757,6 +757,6 @@ function detailBodyRender(detailOption) {
 export {
     setModuleDisabled,
     initModules,
-    onOpend,
+    onOpened,
     onClosed
 };

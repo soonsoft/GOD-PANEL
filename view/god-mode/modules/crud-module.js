@@ -86,7 +86,7 @@ function createProperties(data) {
 const crudModule = {
     menuText: "管理页面示例",
     layout: "top-bottom",
-    onOpend: ctx => {
+    onOpened: ctx => {
         ctx.updatePropertyInfo("status", p => p.options.push({value: "2", text: "啊啊"}));
         ctx.updatePropertyInfo("status", p => p.options.push({value: "3", text: "biubiu"}));
         ctx.updatePropertyInfo("roleName", p => p.label = "Roles");
