@@ -304,10 +304,12 @@ function openPage(moduleId) {
 
     let elem = `
         <div id="detailContentPanel" class="content-panel content-panel-actived">
+            <!--
             <section class="title-panel">
                 <h1>${moduleInfo.menuText}</h1>
                 ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
             </section>
+            -->
             <section class="body-group">
                 ${detailBodyRender(scopeInfo)}
             </section>
