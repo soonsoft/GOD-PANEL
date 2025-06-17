@@ -392,14 +392,21 @@ function clearNextTick(key) {
     return false;
 }
 
-// 深拷贝函数，支持循环引用、Date、Map、Set、RegExp、Function、属性描述符
-function deepClone(obj) {
+// 深拷贝函数
+function deepClone(obj, options = {}) {
+    const {
+        handleDOM = false, // 是否克隆DOM节点
+        handlePromise = false // 是否克隆Promise
+    } = options;
+
     if (typeof obj !== 'object' || obj === null) return obj;
 
     const root = Array.isArray(obj) ? [] : Object.create(Object.getPrototypeOf(obj));
     const stack = [{ parent: root, key: undefined, data: obj }];
     const visited = new Map();
     visited.set(obj, root);
+
+    const isDOM = v => (typeof Node === 'function' && v instanceof Node);
 
     while (stack.length) {
         const { parent, key, data } = stack.pop();
@@ -417,8 +424,25 @@ function deepClone(obj) {
                 clone = new Map();
             } else if (data instanceof Set) {
                 clone = new Set();
+            } else if (data instanceof Error) {
+                clone = new data.constructor(data.message);
+                clone.stack = data.stack;
+            } else if (ArrayBuffer.isView(data)) {
+                clone = new data.constructor(data.buffer.slice(0));
+            } else if (data instanceof ArrayBuffer) {
+                clone = data.slice(0);
             } else if (typeof data === 'function') {
                 clone = data.bind(null);
+            } else if (typeof Promise !== 'undefined' && data instanceof Promise) {
+                clone = handlePromise ? Promise.resolve(data) : data;
+            } else if (typeof WeakMap !== 'undefined' && data instanceof WeakMap) {
+                clone = data; // 只能浅拷贝
+            } else if (typeof WeakSet !== 'undefined' && data instanceof WeakSet) {
+                clone = data; // 只能浅拷贝
+            } else if (typeof Symbol !== 'undefined' && typeof data === 'symbol') {
+                clone = Object(Symbol.prototype.valueOf.call(data));
+            } else if (isDOM(data)) {
+                clone = handleDOM ? data.cloneNode(true) : data;
             } else {
                 clone = Object.create(Object.getPrototypeOf(data));
             }
