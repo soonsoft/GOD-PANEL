@@ -1,4 +1,4 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick } from "../common";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick, deepClone } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
 import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
@@ -294,7 +294,7 @@ function openPage(moduleId) {
 
     let scopeInfo = {
         layout: moduleInfo.layout,
-        properties: moduleInfo.properties,
+        properties: deepClone(moduleInfo.properties),
         actions: moduleInfo.actions,
         onOpened: moduleInfo.onOpened,
         onClosed: moduleInfo.onClosed,
@@ -304,12 +304,10 @@ function openPage(moduleId) {
 
     let elem = `
         <div id="detailContentPanel" class="content-panel content-panel-actived">
-            <!--
             <section class="title-panel">
                 <h1>${moduleInfo.menuText}</h1>
                 ${htmlCondition(v => !isEmpty(v), moduleInfo.description, html`<p>${0}</p>`)}
             </section>
-            -->
             <section class="body-group">
                 ${detailBodyRender(scopeInfo)}
             </section>

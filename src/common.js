@@ -2,32 +2,13 @@ let idValue = 0;
 const EventProxyFnPropery = Symbol("proxyFn");
 const EventProxyElementProperty = Symbol("proxyElement");
 
-const microTask = {
-    taskList: [],
-    status: "pending",
-    run: () => runTask(microTask)
+const taskInfo = {
+    MICRO: "micro",
+    MACRO: "macro",
+    ensureType: type => type === taskInfo.MACRO ? taskInfo.MACRO : taskInfo.MICRO,
+    getTask: type => taskInfo[`${type}Task`],
+    setTask: (type, task) => taskInfo[`${type}Task`] = task
 };
-const macroTask = {
-    taskList: [],
-    status: "pending",
-    run: () => runTask(macroTask)
-};
-
-function runTask(task) {
-    while(task.taskList.length > 0) {
-        task.status = "running";
-        let taskList = task.taskList;
-        task.taskList = [];
-        for(let i = 0; i < taskList.length; i++) {
-            try {
-                taskList[i]();
-            } catch(e) {
-                console.error(e);
-            }
-        }
-    }
-    task.status = "pending";
-}
 
 function loadJS(src, callback) {
     const script = document.createElement("script");
@@ -359,10 +340,35 @@ function setNextTick(fn, type) {
         throw new TypeError("the arguments fn is not a function");
     }
 
-    let task = type === "macro" ? macroTask : microTask;
-    task.taskList.push(fn);
+    type = taskInfo.ensureType(type);
+    let task = taskInfo.getTask(type);
+    if(!task) {
+        task = {
+            status: "pending",
+            list: [],
+            run: () => {
+                while(task.list.length > 0) {
+                    task.status = "running";
+                    let list = task.list;
+                    task.list = [];
+                    for(let i = 0; i < list.length; i++) {
+                        if(isFunction(list[i])) {
+                            try {
+                                list[i]();
+                            } catch(e) {
+                                console.error(e);
+                            }
+                        }
+                    }
+                }
+                task.status = "pending";
+            }
+        };
+        taskInfo.setTask(type, task);
+    }
+    task.list.push(fn);
     if(task.status === "pending") {
-        if(task === microTask) {
+        if(type === taskInfo.MICRO) {
             Promise.resolve().then(task.run);
         } else {
             if(isFunction(setImmediate)) {
@@ -373,11 +379,106 @@ function setNextTick(fn, type) {
         }
         task.status = "waitting";
     }
-    return `type::${task.taskList.length - 1}`;
+    return `${type}::${task.list.length - 1}`;
 }
 
 function clearNextTick(key) {
+    if(!isEmpty(key)) {
+        let [type, index] = key.split("::");
+        let task = taskInfo.getTask(type);
+        task.list[index] = undefined;
+        return true;
+    }
+    return false;
+}
 
+// 深拷贝函数，支持循环引用、Date、Map、Set、RegExp、Function、属性描述符
+function deepClone(obj) {
+    if (typeof obj !== 'object' || obj === null) return obj;
+
+    const root = Array.isArray(obj) ? [] : Object.create(Object.getPrototypeOf(obj));
+    const stack = [{ parent: root, key: undefined, data: obj }];
+    const visited = new Map();
+    visited.set(obj, root);
+
+    while (stack.length) {
+        const { parent, key, data } = stack.pop();
+        let res = parent;
+        if (typeof key !== 'undefined') {
+            let clone;
+            if (Array.isArray(data)) {
+                clone = [];
+            } else if (data instanceof Date) {
+                clone = new Date(data);
+            } else if (data instanceof RegExp) {
+                clone = new RegExp(data.source, data.flags);
+                clone.lastIndex = data.lastIndex;
+            } else if (data instanceof Map) {
+                clone = new Map();
+            } else if (data instanceof Set) {
+                clone = new Set();
+            } else if (typeof data === 'function') {
+                clone = data.bind(null);
+            } else {
+                clone = Object.create(Object.getPrototypeOf(data));
+            }
+            res = parent[key] = clone;
+            visited.set(data, clone);
+        }
+
+        if (data instanceof Map) {
+            for (let [k, v] of data.entries()) {
+                if (typeof v === 'object' && v !== null) {
+                    if (visited.has(v)) {
+                        res.set(k, visited.get(v));
+                    } else {
+                        stack.push({ parent: res, key: k, data: v, isMap: true });
+                    }
+                } else {
+                    res.set(k, v);
+                }
+            }
+            continue;
+        }
+        if (data instanceof Set) {
+            for (let v of data.values()) {
+                if (typeof v === 'object' && v !== null) {
+                    if (visited.has(v)) {
+                        res.add(visited.get(v));
+                    } else {
+                        stack.push({ parent: res, key: v, data: v, isSet: true });
+                    }
+                } else {
+                    res.add(v);
+                }
+            }
+            continue;
+        }
+        const keys = [
+            ...Object.getOwnPropertyNames(data),
+            ...Object.getOwnPropertySymbols(data)
+        ];
+        for (let k of keys) {
+            const desc = Object.getOwnPropertyDescriptor(data, k);
+            if (!desc) continue;
+            if ('value' in desc) {
+                const value = desc.value;
+                if (typeof value === 'object' && value !== null) {
+                    if (visited.has(value)) {
+                        desc.value = visited.get(value);
+                        Object.defineProperty(res, k, desc);
+                    } else {
+                        stack.push({ parent: res, key: k, data: value });
+                    }
+                } else {
+                    Object.defineProperty(res, k, desc);
+                }
+            } else {
+                Object.defineProperty(res, k, desc);
+            }
+        }
+    }
+    return root;
 }
 
 function generateId() {
@@ -513,6 +614,7 @@ export {
     nextElement,
     setNextTick,
     clearNextTick,
+    deepClone,
     generateId,
     show,
     hide,
