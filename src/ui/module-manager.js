@@ -11,6 +11,8 @@ let bodyGroup;
 
 // state
 let currentModuleDisabled = false;
+let isAnimationRunning = false;
+let isSliderActived = false;
 
 function isEmptyModule(module) {
     return (!Array.isArray(module.properties) || module.properties.length === 0)
@@ -29,12 +31,9 @@ function getCurrentModule(id) {
     if(!id) {
         return null;
     }
-    let arr = id.split(":");
-    let index = parseInt(arr[0], 10);
-    let subIndex = parseInt(arr[1], 10);
-
+    let [index, subIndex] = id.split(":").map(Number);
     let module = modules[index];
-    if(!Number.isNaN(subIndex)) {
+    if(subIndex !== undefined && subIndex >= 0 && Array.isArray(module.subModules)) {
         module = module.subModules[subIndex];
     }
     return module;
@@ -454,8 +453,19 @@ function hideDetailPanel() {
     });
 }
 
-function onMenuItemClick(dt, dl) {
+function onMenuItemClick(dt) {
     let id = dt.dataset.menuId;
+    let parentElement = dt.parentElement;
+    let dl;
+    while(true) {
+        if(parentElement.tagName === "DL") {
+            dl = parentElement;
+        }
+        parentElement = parentElement.parentElement;
+        if(parentElement === context.godContentPanel) {
+            break;
+        }
+    }
     if(currentMenuId === id) {
         return;
     }
@@ -521,19 +531,50 @@ function onActionClick(elem) {
 function initModules(moduleList, ctx) {
     modules = moduleList;
     context = ctx;
-    let godMenuPanel = context.godMenuPanel;
+    let godMenuPanel = context.godPanelSider.querySelector(".god-menu-panel");
     let godDetailPanel = context.godDetailPanel;
 
-    function menuItemRender(menuItem, id, level) {
+    function menuListRender(modules) {
+        const htmlBuilder = [];
+        htmlBuilder.push("<dl>");
+        let [currentId, currendSubId] = currentMenuId ? currentMenuId.split(":"): [];
+        modules.forEach((m, i) => {
+            let id = String(i);
+            let subMenuOpenedState = false;
+            let extendButtonUpState = false;
+            if(currendSubId !== undefined && currentId === id) {
+                subMenuOpenedState = true;
+                extendButtonUpState = true;
+            }
+            htmlBuilder.push(menuItemRender(m, id, 0, extendButtonUpState));
+            if(m.subModules) {
+                htmlBuilder.push(`<dd ${htmlCondition(subMenuOpenedState, html`class="submenu-opend"`)}>`);
+                htmlBuilder.push("<dl>");
+                m.subModules.forEach((sub, j) => {
+                    htmlBuilder.push(menuItemRender(sub, (id + ":" + j), 1));
+                });
+                htmlBuilder.push("</dl>", "</dd>");
+            }
+        });
+        htmlBuilder.push("</dl>");
+        return htmlBuilder.join("");
+    }
+
+    function menuItemRender(menuItem, id, level, extendButtonUpState) {
         let marginLeft = 8 + 16 * level;
+        let itemSelectedState = id === currentMenuId;
+        let extendButtonClasses = ["extend-button"];
+        if(extendButtonUpState) {
+            extendButtonClasses.push("extend-button-up");
+        }
         menuItem.id = id;
         return `
-            <dt data-menu-id="${id}">
+            <dt data-menu-id="${id}" ${htmlCondition(itemSelectedState, html`class="menu-item-selected"`)}>
                 <b></b>
                 <u>
                     <i style="margin-left: ${marginLeft}px;${htmlCondition(icon => !isEmpty(icon), menuItem.icon, html`background-image:url(${0});`)}"></i><span>${menuItem.menuText}</span>
                 </u>
-                ${htmlCondition(Array.isArray(menuItem.subModules) && menuItem.subModules.length > 0, html`<a class="extend-button" href="javascript:void(0)"></a>`)}
+                ${htmlCondition(Array.isArray(menuItem.subModules) && menuItem.subModules.length > 0, extendButtonClasses.join(' '), html`<a class="${0}" href="javascript:void(0)"></a>`)}
             </dt>
         `;
     }
@@ -547,6 +588,96 @@ function initModules(moduleList, ctx) {
             subMenuElement.classList.add("submenu-opend");
             extendButton.classList.add("extend-button-up");
         }
+    }
+
+    function setMenuItemSelectedState(dl) {
+        let dtList = dl.getElementsByTagName("dt");
+        for(let i = 0; i < dtList.length; i++) {
+            let dt = dtList[i];
+            let id = dt.dataset.menuId;
+            if(id === currentMenuId) {
+                dt.classList.add("menu-item-selected");
+                if(id.includes(":")) {
+                    let dd = dt.parentElement.parentElement;
+                    let extendButton = dd.previousElementSibling.querySelector("a");
+                    extendButton.classList.add("extend-button-up");
+                    dd.classList.add("submenu-opend");
+                }
+            } else {
+                dt.classList.remove("menu-item-selected");
+            }
+        }
+    }
+
+    function toggleSiderAction() {
+        let godPanelSider = context?.godPanelSider;
+        if(!godPanelSider) {
+            return;
+        }
+
+        if(godPanelSider.classList.contains("sider-panel-compact")) {
+            godPanelSider.classList.remove("sider-panel-compact");
+            removeSliderPanel();
+        } else {
+            godPanelSider.classList.add("sider-panel-compact");
+        }
+    }
+
+    function showSliderPanel() {
+        let sliderPanel = context.godContentPanel.querySelector(".slider-panel");
+        if(!sliderPanel) {
+            let sliderPanelHtml = `
+                <div class="slider-panel god-menu-panel">
+                    ${menuListRender(modules)}
+                </div>
+            `;
+            appendHtml(context.godContentPanel, sliderPanelHtml);
+            sliderPanel = context.godContentPanel.querySelector(".slider-panel");
+            on(sliderPanel, "mouseenter", e => {
+                if(isAnimationRunning) {
+                    return;
+                }
+                isSliderActived = true
+            });
+            on(sliderPanel, "mouseleave", e => {
+                if(isSliderActived && !isAnimationRunning) {
+                    isSliderActived = false;
+                    hideSliderPanel(sliderPanel);
+                }
+            });
+        }
+        if(godDetailPanel.classList.contains("slider-panel-opened")) {
+            return;
+        }
+        sliderPanel.style.display = "block";
+        isAnimationRunning = true;
+        requestAnimationFrame(() => {
+            onAnimationEnd(sliderPanel, e => {
+                isAnimationRunning = false;
+            }, true);
+            sliderPanel.classList.add("slider-panel-opened");
+        });
+    }
+
+    function hideSliderPanel(sliderPanel) {
+        if(!sliderPanel) {
+            return;
+        }
+
+        if(sliderPanel.classList.contains("slider-panel-opened")) {
+            onAnimationEnd(sliderPanel, e => sliderPanel.style.display = "none", true);
+            sliderPanel.classList.remove("slider-panel-opened");
+        }
+    }
+
+    function removeSliderPanel() {
+        let sliderPanel = context.godContentPanel.querySelector(".slider-panel");
+        if(!sliderPanel) {
+            return;
+        }
+        sliderPanel.remove();
+        let dl = context.godPanelSider.querySelector(".god-menu-panel dl");
+        setMenuItemSelectedState(dl);
     }
 
     onClosed(module => {
@@ -573,23 +704,8 @@ function initModules(moduleList, ctx) {
         }
     });
 
-    const htmlBuilder = [];
-    htmlBuilder.push("<dl>");
-    modules.forEach((m, i) => {
-        htmlBuilder.push(menuItemRender(m, i, 0));
-        if(m.subModules) {
-            htmlBuilder.push("<dd>", "<dl>");
-            m.subModules.forEach((sub, j) => {
-                htmlBuilder.push(menuItemRender(sub, (i + ":" + j), 1));
-            });
-            htmlBuilder.push("</dl>", "</dd>");
-        }
-    });
-    htmlBuilder.push("</dl>");
+    appendHtml(godMenuPanel, menuListRender(modules));
 
-    appendHtml(godMenuPanel, htmlBuilder.join(""));
-
-    const dl = godMenuPanel.getElementsByTagName("dl")[0];
     context.clickProxy.on((elem, e, setBehavior) => {
         if(currentModuleDisabled) {
             return;
@@ -608,9 +724,15 @@ function initModules(moduleList, ctx) {
             return;
         }
 
+        if(elem.id === "siderAction") {
+            done();
+            toggleSiderAction();
+            return;
+        }
+
         if(elem.id === "menuAction") {
             done();
-            alert(elem.id);
+            showSliderPanel();
             return;
         }
 
@@ -620,9 +742,9 @@ function initModules(moduleList, ctx) {
             return;
         }
 
-        if(dl && elem.tagName === "DT") {
+        if(elem.tagName === "DT") {
             done();
-            onMenuItemClick(elem, dl);
+            onMenuItemClick(elem);
             return;
         }
 

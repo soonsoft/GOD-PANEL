@@ -212,7 +212,7 @@ function createEventProxy(element, eventName) {
             if(isAborted) {
                 break;
             }
-            elem = elem.parentNode;
+            elem = elem.parentElement;
         }
     };
     on(element, eventName, proxy[EventProxyFnPropery]);

@@ -22,6 +22,7 @@ const godInfo = {
 
 const backActionIcon = "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIyNjQiPjxwYXRoIGQ9Ik0xNTYuNjA4IDQ4Ny44NTkyYzEuMTU2MjY3LTEuMTM3MDY3IDIuNjQ4NTMzLTEuNjIyNCAzLjkxODkzMy0yLjU1ODkzM2wzMDYuNjY2NjY3LTMwMS41NjkwNjdjMTMuMTk1NzMzLTEyLjk3MDY2NyAzNC41ODY2NjctMTIuOTcwNjY3IDQ3Ljc4MTMzMyAwIDEzLjE5NDY2NyAxMi45NzgxMzMgMTMuMTk0NjY3IDM0LjAxMzg2NyAwIDQ2Ljk4NzczM0wyNjMuMzAyNCA0NzguMjEwMTMzbDU3OS4yMDMyIDBjMTguOTc4MTMzIDAgMzQuMzYyNjY3IDE1LjEyODUzMyAzNC4zNjI2NjcgMzMuNzg5ODY3IDAgMTguNjYyNC0xNS4zODQ1MzMgMzMuNzkzMDY3LTM0LjM2MjY2NyAzMy43OTMwNjdMMjYzLjMwMjQgNTQ1Ljc5MzA2N2wyNTEuNjcxNDY3IDI0Ny40ODY5MzNjMTMuMTk0NjY3IDEyLjk3MTczMyAxMy4xOTQ2NjcgMzQuMDEwNjY3IDAgNDYuOTg0NTMzLTEzLjE5NDY2NyAxMi45NzQ5MzMtMzQuNTg2NjY3IDEyLjk3NDkzMy00Ny43ODEzMzMgMGwtMzA2LjY2NjY2Ny0zMDEuNTYxNmMtMS4yNjkzMzMtMC45Mzk3MzMtMi43NjI2NjctMS40MjE4NjctMy45MTg5MzMtMi41NjIxMzMtNi4zMzQ5MzMtNi4yMzA0LTkuMjQwNTMzLTE0LjM0MDI2Ny05LjQ3NzMzMy0yMi41MDI0QzE0Ny4zNjc0NjcgNTAyLjIwMDUzMyAxNTAuMjczMDY3IDQ5NC4wOTA2NjcgMTU2LjYwOCA0ODcuODU5MkwxNTYuNjA4IDQ4Ny44NTkyek0xNTYuNjA4IDQ4Ny44NTkyIiBwLWlkPSIyMjY1Ij48L3BhdGg+PC9zdmc+";
 const menuActionIcon = "data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjQwMDEiPjxwYXRoIGQ9Ik03MzYgMzUySDI4OGEzMiAzMiAwIDEgMSAwLTY0aDQ0OGEzMiAzMiAwIDAgMSAwIDY0eiBtMCAxOTJIMjg4YTMyIDMyIDAgMSAxIDAtNjRoNDQ4YTMyIDMyIDAgMCAxIDAgNjR6IG0wIDE5MkgyODhhMzIgMzIgMCAwIDEgMC02NGg0NDhhMzIgMzIgMCAwIDEgMCA2NHoiIHAtaWQ9IjQwMDIiPjwvcGF0aD48L3N2Zz4=";
+const siderActionIcon = "data:image/svg+xml;base64,PHN2ZyBzdHlsZT0id2lkdGg6IDFlbTtoZWlnaHQ6IDFlbTt2ZXJ0aWNhbC1hbGlnbjogbWlkZGxlO2ZpbGw6IGN1cnJlbnRDb2xvcjtvdmVyZmxvdzogaGlkZGVuOyIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjEzMjY0Ij48cGF0aCBkPSJNODI0Ljg4ODg4OSAxNzAuNjY2NjY3SDE5OS4xMTExMTFhNTYuODg4ODg5IDU2Ljg4ODg4OSAwIDAgMC01Ni44ODg4ODkgNTYuODg4ODg5djU2OC44ODg4ODhhNTYuODg4ODg5IDU2Ljg4ODg4OSAwIDAgMCA1Ni44ODg4ODkgNTYuODg4ODg5aDYyNS43Nzc3NzhhNTYuODg4ODg5IDU2Ljg4ODg4OSAwIDAgMCA1Ni44ODg4ODktNTYuODg4ODg5VjIyNy41NTU1NTZhNTYuODg4ODg5IDU2Ljg4ODg4OSAwIDAgMC01Ni44ODg4ODktNTYuODg4ODg5eiBtMCA1OTcuMzMzMzMzYTI4LjQ0NDQ0NCAyOC40NDQ0NDQgMCAwIDEtMjguNDQ0NDQ1IDI4LjQ0NDQ0NEgyMjcuNTU1NTU2YTI4LjQ0NDQ0NCAyOC40NDQ0NDQgMCAwIDEtMjguNDQ0NDQ1LTI4LjQ0NDQ0NFYyNTZhMjguNDQ0NDQ0IDI4LjQ0NDQ0NCAwIDAgMSAyOC40NDQ0NDUtMjguNDQ0NDQ0aDU2OC44ODg4ODhhMjguNDQ0NDQ0IDI4LjQ0NDQ0NCAwIDAgMSAyOC40NDQ0NDUgMjguNDQ0NDQ0ek01MTIgMjU2bTI4LjQ0NDQ0NCAwbDIyNy41NTU1NTYgMHEyOC40NDQ0NDQgMCAyOC40NDQ0NDQgMjguNDQ0NDQ0bDAgNDU1LjExMTExMnEwIDI4LjQ0NDQ0NC0yOC40NDQ0NDQgMjguNDQ0NDQ0bC0yMjcuNTU1NTU2IDBxLTI4LjQ0NDQ0NCAwLTI4LjQ0NDQ0NC0yOC40NDQ0NDRsMC00NTUuMTExMTEycTAtMjguNDQ0NDQ0IDI4LjQ0NDQ0NC0yOC40NDQ0NDRaIiBwLWlkPSIxMzI2NSI+PC9wYXRoPjwvc3ZnPg==";
 
 onClosed(() => hideLoading());
 
@@ -46,6 +47,9 @@ function insertGodPanel() {
                             <button id="backAction" type="button" title="后退" disabled>
                                 <img src="${backActionIcon}" alt="">
                             </button>
+                            <button id="siderAction" type="button" title="侧边栏">
+                                <img src="${siderActionIcon}" alt="">
+                            </button>
                             <button id="menuAction" type="button" title="菜单">
                                 <img src="${menuActionIcon}" style="transform:scale3d(1.2, 1.2, 1.2)" alt="">
                             </button>
@@ -54,7 +58,7 @@ function insertGodPanel() {
                     <div class="logo-panel">
                         <h1 class="god-text"><span>GOD PANEL</span></h1>
                     </div>
-                    <div id="godMenuPanel"></div>
+                    <div class="menu-panel god-menu-panel"></div>
                     <div class="bottom-panel"></div>
                 </div>
                 <div id="godPanelContainer">
@@ -73,7 +77,7 @@ function insertGodPanel() {
 
     godInfo.godBackground = document.getElementById("godBackground");
     godInfo.godContentPanel = document.getElementById("godContentPanel");
-    godInfo.godMenuPanel = document.getElementById("godMenuPanel");
+    godInfo.godPanelSider = document.getElementById("godPanelSider");
     godInfo.godDetailPanel = document.getElementById("godDetailPanel");
 
     godInfo.clickProxy = createEventProxy(godInfo.godContentPanel, "click");
