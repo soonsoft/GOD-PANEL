@@ -51,8 +51,10 @@ function createActionContext(ctx, scope) {
         getCurrentViewModel: () => {
             return getCurrentViewModel(null, scope);
         },
-        checkCurrentViewModel: () => {
-            return checkCurrentViewModel(null, scope);
+        checkCurrentViewModel: function() {
+            let args = Array.prototype.slice.call(arguments, 0, arguments.length);
+            args.splice(0, 0, null, scope);
+            return checkCurrentViewModel.apply(ctx, args);
         },
         getPropertyValue: (propertyName) => {
             return getPropertyValue(propertyName, scope);
@@ -162,7 +164,7 @@ function checkCurrentViewModel(properties, scope) {
         checkPropertyList = Array.prototype.slice.call(arguments, 0, arguments.length);
         properties = null;
     } else {
-        checkPropertyList = Array.prototype.slice.call(arguments, 1, arguments.length);
+        checkPropertyList = Array.prototype.slice.call(arguments, 2, arguments.length);
     }
 
     if(!properties) {

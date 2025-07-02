@@ -1,6 +1,6 @@
 :root {
     --background-image: linear-gradient(90deg, rgb(0, 98, 255), rgb(66, 212, 241), rgb(174, 126, 237));
-    --slider-menu-background: linear-gradient(180deg, rgb(106, 220, 252), rgb(92, 170, 255));
+    --slider-menu-background: linear-gradient(180deg, rgb(150, 218, 241), rgb(107, 168, 249));
     --logo-color: linear-gradient(90deg, rgb(50, 127, 252), rgb(66, 212, 241), rgb(253, 78, 250));
     --primary-color: rgb(0, 98, 255);
     --font-color: #000000;
@@ -250,6 +250,7 @@ div.loading-show {
             flex: 0 0 200px;
             display: flex;
             flex-direction: column;
+            /* transition: flex .32s cubic-bezier(.4, 0, .6, 1) 0s; */
 
             & .top-panel {
                 display: flex;
@@ -365,8 +366,7 @@ div.loading-show {
             }
 
             & .menu-panel {
-                flex: 1 1 auto;
-                width: 100%;
+                flex: 1 1 100%;
             }
 
             & .bottom-panel {
@@ -528,9 +528,7 @@ div.loading-show {
                             & .body-container {
                                 flex: 1 1 auto;
                                 display: flex;
-                                border: solid 1px var(--primary-color);
                                 box-sizing: border-box;
-                                border-radius: 6px;
                                 overflow: auto;
                             }
 
@@ -736,24 +734,44 @@ div.loading-show {
 
                 & section.left-right {
                     flex-direction: row;
-                }
+                    gap: 10px;
 
-                & section.left-right .form-panel {
-                    flex-direction: column;
-                    flex: 0 0 240px;
-                    height: 100%;
-                    border-right: solid 1px var(--primary-color);
+                    & .form-panel {
+                        flex-direction: column;
+                        flex: 0 0 240px;
+                        height: 100%;
+                        box-sizing: border-box;
+                        border-radius: 6px;
+                        border: solid 1px var(--primary-color);
+                    }
+
+                    & .result-panel {
+                        box-sizing: border-box;
+                        border-radius: 6px;
+                        border: solid 1px var(--primary-color);
+                        padding: 10px;
+
+                        & .card-view {
+                            margin: auto;
+                        }
+                    }
                 }
 
                 & section.top-bottom {
                     flex-direction: column;
-                }
 
-                & section.top-bottom .form-panel {
-                    flex-direction: row;
-                    width: 100%;
-                    min-height: 48px;
-                    border-bottom: solid 1px var(--primary-color);
+                    & .form-panel {
+                        flex-direction: row;
+                        width: 100%;
+                        min-height: 48px;
+                        box-sizing: border-box;
+                        border-radius: 6px;
+                        border: solid 1px var(--primary-color);
+                    }
+
+                    & .result-panel {
+                        margin: 10px 0 10px 0;
+                    }
                 }
 
                 /* 普通属性列表面板 */
@@ -865,8 +883,8 @@ div.loading-show {
                     background-color: var(--basic-bg-color);
                     border-radius: 6px;
                     padding: 0 10px 0 10px;
-                    margin-top: 10px;
-                    margin-left: 10px;
+                    margin-bottom: 10px;
+                    margin-right: 10px;
                     display: flex;
                     flex-direction: row;
                     overflow: hidden;
@@ -892,9 +910,9 @@ div.loading-show {
                 }
 
                 & .result-content-panel {
-                    width: calc(100% - 20px);
+                    width: 100%;
                     height: auto;
-                    margin: 10px auto 10px auto;
+                    box-sizing: border-box;
                     border-radius: 6px;
                     overflow: hidden;
                     display: flex;
@@ -959,6 +977,11 @@ div.loading-show {
                 & .image-view {
                     width: 100%;
                     vertical-align: top;
+                }
+
+                & .image-view-gap {
+                    width: 100%;
+                    height: 10px;
                 }
 
                 & .card-view {
@@ -1041,7 +1064,11 @@ div.loading-show {
                 & u {
                     text-decoration: none;
                     position: absolute;
+                    inset: 0;
                     display: block;
+                    text-align: left;
+                    overflow: hidden;
+                    padding-right: 20px;
                 }
 
                 & i {

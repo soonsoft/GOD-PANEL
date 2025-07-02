@@ -87,9 +87,6 @@ const crudModule = {
     menuText: "管理页面示例",
     layout: "top-bottom",
     onOpened: ctx => {
-        ctx.updatePropertyInfo("status", p => p.options.push({value: "2", text: "啊啊"}));
-        ctx.updatePropertyInfo("status", p => p.options.push({value: "3", text: "biubiu"}));
-        ctx.updatePropertyInfo("roleName", p => p.label = "Roles");
         ctx.callAction("query", {
             pageIndex: 1,
             pageSize: 20
@@ -217,6 +214,7 @@ const crudModule = {
                         {
                             text: "保存",
                             action: async childCtx => {
+                                debugger
                                 if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }
@@ -234,6 +232,14 @@ const crudModule = {
                         }
                     ]
                 });
+            }
+        },
+        {
+            text: "更新条件",
+            action: ctx => {
+                ctx.updatePropertyInfo("status", p => p.options.push({value: "2", text: "啊啊"}));
+                ctx.updatePropertyInfo("status", p => p.options.push({value: "3", text: "biubiu"}));
+                ctx.updatePropertyInfo("roleName", p => p.label = "Roles");
             }
         }
     ]

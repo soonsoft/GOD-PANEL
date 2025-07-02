@@ -375,6 +375,9 @@ function imageRender() {
             });
         }
         htmlBuilder.push("</div>");
+        if(i < argArray.length - 1) {
+            htmlBuilder.push('<div class="image-view-gap"></div>');
+        }
     }
 
     resultRender(htmlBuilder.join(""));
