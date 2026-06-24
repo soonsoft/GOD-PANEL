@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/soonsoft/GOD-PANEL#readme",
   "devDependencies": {
-    "vite": "^6.3.5"
+    "vite": "^8.0.16"
   },
   "dependencies": {
     "lit": "^3.3.1"

@@ -146,7 +146,17 @@ const renderModule = {
                         break;
                     case "card":
                         let arr = new Array(20);
-                        ctx.cardRender(arr);
+                        const options = {
+                            width: "300px",
+                            height: "150px",
+                            formatter: (item, index) => {
+                                return `
+                                    <h3>卡片标题 ${index + 1}</h3>
+                                    <p>卡片内容 ${index + 1}</p>
+                                `;
+                            }
+                        };
+                        ctx.cardRender(arr, options);
                         return;
                     default:
                         result = "显示文本信息";

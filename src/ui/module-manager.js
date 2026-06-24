@@ -1,8 +1,9 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick, deepClone } from "../common";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick, deepClone, escapeHtml } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
 import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
 import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender, showToast } from "./panel-ui"
+import { renderGridLayoutCssString, collectAreaCells } from "./layout/grid-layout";
 
 let context;
 let modules = [];
@@ -134,10 +135,6 @@ function callAction(actionInfo, module, elem, scope, options = {}) {
             doError(e);
         }
     }
-}
-
-function isEditorProperty(property) {
-    return typeof property === "string" ? property.startsWith("editor_") : property.scope === "editor";
 }
 
 //#endregion
@@ -773,12 +770,7 @@ function initModules(moduleList, ctx) {
         const scope = propertyId.scope;
         const propertyName = propertyId.id;
         const scopeInfo = getScopeInfo(scope);
-        let properties;
-        if(isEditorProperty(propertyName)) {
-            properties = getEditorProperties(scope);
-        } else {
-            properties = scopeInfo.properties;
-        }
+        let properties = scopeInfo.properties;
         if(properties) {
             const value = elem.value;
             for(let i = 0; i < properties.length; i++) {
@@ -867,6 +859,40 @@ function detailBodyRender(detailOption) {
         Array.isArray(detailOption.styles) && detailOption.styles.length > 0 
             ? ` style="${detailOption.styles.join(";")}"` 
             : "";
+    if(typeof bodyLayout !== "string") {
+        const layoutStyle = renderGridLayoutCssString(bodyLayout);
+        const areaCells = collectAreaCells(bodyLayout);
+        // 按角色解析区域（不绑定固定字面名，以便直接使用 layoutBox 等任意 grid 布局）：
+        //   - 结果落点：优先 result-panel 命名区域，否则取 size:fill 的主区域；为其打上 result-panel 类供 resultRender 定位
+        //   - 表单区域：form-panel 命名区域；有 properties 时注入 formRender
+        //   - 其余 area：空格子，留给模块自行填充
+        const resultArea = areaCells.find(c => c.area === "result-panel")?.area
+            || areaCells.find(c => c.size === "fill")?.area;
+        const formArea = areaCells.find(c => c.area === "form-panel")?.area;
+        const hasForm = Array.isArray(properties) && properties.length > 0 && !!formArea;
+        const cellsHtml = areaCells.map(({ area }) => {
+            const classes = [area];
+            let inner = "";
+            if(area === resultArea) {
+                classes.push("result-panel");
+            }
+            if(area === formArea) {
+                classes.push("form-panel");
+                if(hasForm) {
+                    inner = formRender(properties, scope);
+                }
+            }
+            return `<section class="${classes.join(" ")}" style="grid-area:${area};">${inner}</section>`;
+        }).join("");
+        return `
+            <section class="body-panel${bodyClass}"${bodyStyle}>
+                <section class="body-container" style="${escapeHtml(layoutStyle)} align-content: stretch;">
+                    ${cellsHtml}
+                </section>
+                ${buttonRender(actions, scope)}
+            </section>
+        `;
+    }
     return `
         <section class="body-panel${bodyClass}"${bodyStyle}>
             <section class="body-container ${bodyLayout}">

@@ -25,7 +25,7 @@ function getContentDisposition(header) {
         }
         if(part.indexOf("=") > -1) {
             let arr = part.split("=");
-            result[arr[0].trim()] = ecodeURIComponent(arr[1].trim());
+            result[arr[0].trim()] = decodeURIComponent(arr[1].trim());
         } else {
             result.value = part;
         }
@@ -75,13 +75,13 @@ async function httpDownload(url, data, filename, method) {
             }
         }
 
-        saveAs(blob, filename);
+        saveAs(b, filename);
     } else {
         throw {
             code: "Http 请求出错了",
             status: resp.status,
             statusText: resp.statusText,
-            message: resp.text()
+            message: await resp.text()
         }
     }
 }
@@ -125,7 +125,7 @@ async function parallelRequest(requestTasks, option) {
                 };
                 if(responseDataType === "blob") {
                     result[resultIndex].data = await resp.blob();
-                    result[resultIndex].filename = getContentDispositionFileName(resp.headers);
+                    result[resultIndex].filename = getContentDisposition(resp.headers)?.filename;
                 } else {
                     result[resultIndex].data = resp;
                 }
@@ -258,7 +258,7 @@ async function httpRequest(url, method, data, options) {
     if(response.ok) {
         if(responseDataType === "json") {
             return await response.json();
-        } else if(requestDataType === "text") {
+        } else if(responseDataType === "text") {
             return await response.text();
         } else {
             return await response;
@@ -268,7 +268,7 @@ async function httpRequest(url, method, data, options) {
             code: "Http 请求出错了",
             status: response.status,
             statusText: response.statusText,
-            message: response.text()
+            message: await response.text()
         }
     }
 }

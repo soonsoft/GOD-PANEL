@@ -7,13 +7,15 @@ import { loadingModule } from "./modules/loading-module";
 import { renderModule } from "./modules/render-module";
 import { aboutModule } from "./modules/about-module";
 import { crudModule } from "./modules/crud-module";
+import { layoutModule } from "./modules/layout-module";
 
 const moduleList = [
     formModule,
     loadingModule,
     renderModule,
     crudModule,
-    aboutModule
+    layoutModule,
+    aboutModule,
 ];
 
 const godInfo = {
@@ -99,7 +101,7 @@ function insertGodPanel() {
         godPanel.classList.remove("god-panel-show");
         godHandle.classList.add("god-handle-show");
         if(godInfo.app) {
-            requestAnimationFrame(() => {
+            setTimeout(() => {
                 godInfo.app.classList.remove("app-hide");
             }, 320);
         }

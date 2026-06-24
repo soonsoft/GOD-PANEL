@@ -100,7 +100,7 @@ const formModule = {
             properties: [
                 { id: "fileName", type: "string", label: "文件名称", required: true, value: "" }
             ],
-            button: [
+            actions: [
                 {
                     text: "显示文件列表",
                     action: ctx => {

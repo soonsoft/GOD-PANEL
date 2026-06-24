@@ -110,7 +110,7 @@ export function propertyRender(propertyInfo, depMap, scope) {
                         selectRender
                     });
                 });
-                options = [];
+                propertyInfo.options = [];
             }
             htmlBuilder.push(`<select id="${propertyId}">`);
             htmlBuilder.push(selectRender(propertyInfo.options, propertyInfo));

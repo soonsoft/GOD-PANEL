@@ -80,9 +80,13 @@ function base64Encode(str) {
     if(isEmpty(str)) {
         return "";
     }
-    let encoder = new TextEncoder("utf-8");
+    let encoder = new TextEncoder();
     let uint8array = encoder.encode(str);
-    return uint8array.toBase64();
+    let binary = "";
+    for(let i = 0; i < uint8array.length; i++) {
+        binary += String.fromCharCode(uint8array[i]);
+    }
+    return btoa(binary);
 }
 
 // Todo test this function
@@ -310,7 +314,7 @@ function nextElement(elem) {
     }
     let next = elem.nextSibling;
     while(next && next.nodeType !== 1) {
-        next = elem.nextSibling;
+        next = next.nextSibling;
     }
     return next;
 }
@@ -324,7 +328,7 @@ function previousElement(elem) {
     }
     let next = elem.previousSibling;
     while(next && next.nodeType !== 1) {
-        next = elem.previousSibling;
+        next = next.previousSibling;
     }
     return next;
 }
@@ -505,6 +509,13 @@ function deepClone(obj, options = {}) {
     return root;
 }
 
+function cloneData(obj) {
+    if(isFunction(structuredClone)) {
+        return structuredClone(obj);
+    }
+    return deepClone(obj);
+}
+
 function generateId() {
     idValue++;
     return idValue;
@@ -617,6 +628,83 @@ function splitText(str, split) {
     return result;
 }
 
+function debounce(fn, delay = 300) {
+    if(!isFunction(fn)) {
+        throw new TypeError("the arguments fn is not a function");
+    }
+    let timer = null;
+    return function (...args) {
+        if (timer) {
+            clearTimeout(timer);
+        }
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+function camelToKebabSinglePass(str) {
+  const parts = [];
+  let prevIsLowerOrDigit = false;
+  let prevIsUpper = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    const code = ch.charCodeAt(0);
+
+    const isUpper = code >= 65 && code <= 90;   // A-Z
+    const isLower = code >= 97 && code <= 122;  // a-z
+    const isDigit = code >= 48 && code <= 57;   // 0-9
+
+    // 插入 '-' 的边界条件
+    // 1) lower/digit -> Upper      (gridTemplate)
+    // 2) Upper -> Upper+lower      (HTTPServer)
+    if (
+      i > 0 &&
+      isUpper &&
+      (prevIsLowerOrDigit || (prevIsUpper && i + 1 < str.length && isLower))
+    ) {
+      parts.push('-');
+    }
+
+    // 统一转小写（仅对 A-Z）
+    parts.push(isUpper ? ch.toLowerCase() : ch);
+
+    prevIsLowerOrDigit = isLower || isDigit;
+    prevIsUpper = isUpper;
+  }
+
+  return parts.join('');
+}
+
+const htmlEscapeMap = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;' // 单引号使用 &#39; 兼容性最好
+};
+
+const htmlEscapeReg = /[&<>"']/g;
+
+function escapeHtml(str) {
+    if(isEmpty(str)) {
+        return "";
+    }
+    // 1. 提前退出：如果字符串中不包含任何特殊字符，直接返回原字符串
+    // indexOf 在底层 C++ 实现中速度极快，能避免不必要的正则引擎开销
+    if (str.indexOf('&') === -1 && 
+        str.indexOf('<') === -1 && 
+        str.indexOf('>') === -1 && 
+        str.indexOf('"') === -1 && 
+        str.indexOf("'") === -1) {
+        return str;
+    }
+
+    // 2. 单次正则匹配 + Map 查找
+    return str.replace(htmlEscapeReg, (char) => htmlEscapeMap[char]);
+}
+
+
+
 export {
     loadJS,
     ready,
@@ -639,11 +727,15 @@ export {
     setNextTick,
     clearNextTick,
     deepClone,
+    cloneData,
     generateId,
     show,
     hide,
     saveAs,
     readTextFile,
     convertDataAttr,
-    splitText
+    splitText,
+    debounce,
+    camelToKebabSinglePass,
+    escapeHtml
 };

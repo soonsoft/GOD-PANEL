@@ -214,7 +214,6 @@ const crudModule = {
                         {
                             text: "保存",
                             action: async childCtx => {
-                                debugger
                                 if(childCtx.checkCurrentViewModel().invalid(v => childCtx.jsonRender(v.messages))) {
                                     return;
                                 }

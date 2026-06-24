@@ -18,8 +18,11 @@ export function cardRender(data, options) {
     let formatter = options.formatter || options;
     formatter = isFunction(formatter) ? formatter : (item, i) => `<div>${i}</div>`;
 
+    let width = options.width || "200px";
+    let height = options.height || "200px";
+
     let htmlBuilder = [];
-    htmlBuilder.push(`<div class="result-content-panel card-view">`);
+    htmlBuilder.push(`<div class="result-content-panel card-view" style="grid-template-columns: repeat(auto-fit, minmax(${width}, 1fr)); grid-auto-rows: ${height};">`);
     for(let i = 0; i < arr.length; i++) {
         let item = arr[i];
         htmlBuilder.push(`<div class="card-item">`);

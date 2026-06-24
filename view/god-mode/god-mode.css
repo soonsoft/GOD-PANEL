@@ -262,7 +262,7 @@ div.loading-show {
                     flex-direction: row;
                     justify-content: left;
                     align-items: center;
-                    flex: 0 0 100px;
+                    flex: 0 0 auto;
                     column-gap: 8px;
                     height: 100%;
                     overflow: hidden;
@@ -322,7 +322,7 @@ div.loading-show {
                 display: flex;
                 flex-direction: row;
                 justify-content: center;
-                align-items: top;
+                align-items: center;
 
                 & .god-text {
                     flex: 0 0 150px;

@@ -40,7 +40,7 @@ function getScopeInfo(scope) {
 }
 
 function getMainScopeInfo() {
-    return getScopeInfo()[0];
+    return getScopeInfo(0);
 }
 
 function getLastScopeInfo() {
