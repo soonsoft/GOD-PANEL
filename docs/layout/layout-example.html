@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout DSL Engine</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: sans-serif; overflow: hidden; }
+    #app { height: 100vh; padding: 10px; background-color: #f0f2f5; }
+
+    /* 演示样式 */
+    div[data-id] {
+      border: 2px solid #333;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      overflow: hidden; 
+    }
+    div[data-id="root"] { border: none; background: transparent; }
+    div[data-id="HeaderComp"] { background-color: #4CAF50; }
+    div[data-id="SidebarComp"] { background-color: #2196F3; }
+    div[data-id="FooterComp"] { background-color: #FF9800; }
+    div[data-id="MainArea"] { border: 2px dashed #999; background-color: #fff; }
+    div[data-id="Chart1"] { background-color: #9C27B0; }
+    div[data-id="Table"] { background-color: #E91E63; }
+    div[data-id="Form"] { background-color: #00BCD4; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // ================= 1. DSL JSON 定义 =================
+    const layoutJson = {
+      "id": "root",
+      "layout": {
+        "columns": ["200px", "1fr"],
+        "rows": ["60px", "1fr", "40px"],
+        "areas": [
+          ["header", "header"],
+          ["sidebar", "main"],
+          ["footer", "footer"]
+        ],
+        "gap": "12px"
+      },
+      "children": [
+        { "id": "HeaderComp", "location": { "area": "header" } },
+        { "id": "SidebarComp", "location": { "area": "sidebar" } },
+        {
+          "id": "MainArea",
+          "location": { "area": "main" },
+          "layout": {
+            "columns": ["1fr", "1fr"],
+            "rows": ["40px", "1fr"],
+            "gap": ["10px", "16px"]
+          },
+          "children": [
+            { "id": "Chart1", "location": { "colSpan": 2 } },
+            { "id": "Table", "location": { "colStart": 1, "colEnd": 2 } },
+            { "id": "Form", "location": { "colStart": 2, "colEnd": 3 } }
+          ]
+        },
+        { "id": "FooterComp", "location": { "area": "footer" } }
+      ]
+    };
+
+    // ================= 2. 渲染引擎实现 =================
+    function generateStyleStr(node) {
+      const styles = [];
+      // 默认强制高度 100%，打通嵌套高度传递
+      styles.push('height: 100%');
+
+      if (node.size) {
+        if (node.size.width) styles.push(`width: ${node.size.width}`);
+        if (node.size.height) styles.push(`height: ${node.size.height}`);
+      }
+
+      if (node.layout) {
+        styles.push('display: grid');
+        if (node.layout.columns) {
+          const cols = Array.isArray(node.layout.columns) ? node.layout.columns.join(' ') : node.layout.columns;
+          styles.push(`grid-template-columns: ${cols}`);
+        }
+        if (node.layout.rows) {
+          const rows = Array.isArray(node.layout.rows) ? node.layout.rows.join(' ') : node.layout.rows;
+          styles.push(`grid-template-rows: ${rows}`);
+        }
+        if (node.layout.gap) {
+          if (Array.isArray(node.layout.gap)) {
+            styles.push(`row-gap: ${node.layout.gap[0]}`);
+            styles.push(`column-gap: ${node.layout.gap[1]}`);
+          } else {
+            styles.push(`gap: ${node.layout.gap}`);
+          }
+        }
+        if (node.layout.areas) {
+          const areasStr = node.layout.areas.map(row => `&quot;${row.join(' ')}&quot;`).join(' ');
+          styles.push(`grid-template-areas: ${areasStr}`);
+        }
+      }
+
+      if (node.location) {
+        if (node.location.area) {
+          styles.push(`grid-area: ${node.location.area}`);
+        } else {
+          if (node.location.colSpan) styles.push(`grid-column: span ${node.location.colSpan}`);
+          else if (node.location.colStart && node.location.colEnd) styles.push(`grid-column: ${node.location.colStart} / ${node.location.colEnd}`);
+          if (node.location.rowSpan) styles.push(`grid-row: span ${node.location.rowSpan}`);
+        }
+      }
+      return styles.join('; ');
+    }
+
+    function renderLayoutToHtml(node) {
+      if (!node) return '';
+      const tag = 'div';
+      const styleStr = generateStyleStr(node);
+      const dataIdAttr = node.id ? ` data-id="${node.id}"` : '';
+      const styleAttr = styleStr ? ` style="${styleStr}"` : '';
+      
+      let html = `<${tag}${dataIdAttr}${styleAttr}>`;
+      if (node.children && node.children.length > 0) {
+        html += node.children.map(child => renderLayoutToHtml(child)).join('');
+      } else if (node.id) {
+        html += node.id; // 写入文字便于预览
+      }
+      html += `</${tag}>`;
+      return html;
+    }
+
+    // ================= 3. 执行渲染 =================
+    const htmlString = renderLayoutToHtml(layoutJson);
+    document.getElementById('app').innerHTML = htmlString;
+  </script>
+</body>
+</html>

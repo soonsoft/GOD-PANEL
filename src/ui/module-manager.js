@@ -1,9 +1,9 @@
-import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick, deepClone, escapeHtml } from "../common";
+import { isFunction, isEmpty, on, html, htmlCondition, appendHtml, replaceHtml, onAnimationStart, onAnimationEnd, setNextTick, deepClone } from "../common";
 import { addEventListener, dispatchEvent } from "../event";
 import { getScopeInfo, addScopeInfo, parsePropertyId, wrapFunctionWithContext, releaseScopeStack, newScopeStack, setScopeData, getScopeData, getScopeStackSize, popScopeStack, peekScopeStack } from "./module-scope";
 import { addDependency, updateDependency } from "../dependency";
 import { cardRender, createLinkButton, imageRender, jsonRender, propertyRender, tableRender, pageButtonRender, showToast } from "./panel-ui"
-import { renderGridLayoutCssString, collectAreaCells } from "./layout/grid-layout";
+import { renderBodyContainer } from "./layout/body-layout";
 
 let context;
 let modules = [];
@@ -848,61 +848,26 @@ function buttonRender(buttonList, scope) {
 
 function detailBodyRender(detailOption) {
     let bodyLayout = isEmpty(detailOption.layout) ? "left-right" : detailOption.layout;
-    let properties = detailOption.properties;
-    let actions = detailOption.actions;
-    let scope = detailOption.scope;
-    let bodyClass = 
-        Array.isArray(detailOption.classes) && detailOption.classes.length > 0 
+    let bodyClass =
+        Array.isArray(detailOption.classes) && detailOption.classes.length > 0
             ? " " + detailOption.classes.join(" ")
             : "";
-    let bodyStyle = 
-        Array.isArray(detailOption.styles) && detailOption.styles.length > 0 
-            ? ` style="${detailOption.styles.join(";")}"` 
+    let bodyStyle =
+        Array.isArray(detailOption.styles) && detailOption.styles.length > 0
+            ? ` style="${detailOption.styles.join(";")}"`
             : "";
-    if(typeof bodyLayout !== "string") {
-        const layoutStyle = renderGridLayoutCssString(bodyLayout);
-        const areaCells = collectAreaCells(bodyLayout);
-        // 按角色解析区域（不绑定固定字面名，以便直接使用 layoutBox 等任意 grid 布局）：
-        //   - 结果落点：优先 result-panel 命名区域，否则取 size:fill 的主区域；为其打上 result-panel 类供 resultRender 定位
-        //   - 表单区域：form-panel 命名区域；有 properties 时注入 formRender
-        //   - 其余 area：空格子，留给模块自行填充
-        const resultArea = areaCells.find(c => c.area === "result-panel")?.area
-            || areaCells.find(c => c.size === "fill")?.area;
-        const formArea = areaCells.find(c => c.area === "form-panel")?.area;
-        const hasForm = Array.isArray(properties) && properties.length > 0 && !!formArea;
-        const cellsHtml = areaCells.map(({ area }) => {
-            const classes = [area];
-            let inner = "";
-            if(area === resultArea) {
-                classes.push("result-panel");
-            }
-            if(area === formArea) {
-                classes.push("form-panel");
-                if(hasForm) {
-                    inner = formRender(properties, scope);
-                }
-            }
-            return `<section class="${classes.join(" ")}" style="grid-area:${area};">${inner}</section>`;
-        }).join("");
-        return `
-            <section class="body-panel${bodyClass}"${bodyStyle}>
-                <section class="body-container" style="${escapeHtml(layoutStyle)} align-content: stretch;">
-                    ${cellsHtml}
-                </section>
-                ${buttonRender(actions, scope)}
-            </section>
-        `;
-    }
+    const containerHtml = renderBodyContainer(bodyLayout, {
+        properties: detailOption.properties,
+        scope: detailOption.scope,
+        formRender
+    });
     return `
         <section class="body-panel${bodyClass}"${bodyStyle}>
-            <section class="body-container ${bodyLayout}">
-                ${htmlCondition(Array.isArray(properties) && properties.length > 0, formRender(properties, scope), html`<section class="form-panel">${0}</section>`)}
-                <section class="result-panel"></section>
-            </section>
-            ${buttonRender(actions, scope)}
+            ${containerHtml}
+            ${buttonRender(detailOption.actions, detailOption.scope)}
         </section>
     `;
-} 
+}
 
 export {
     setModuleDisabled,
